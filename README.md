@@ -67,7 +67,7 @@ An animal is always in one of these statuses: Available, Application Pending, Ap
 ### Run the frontend
 
 ```bash
-git clone -b development https://github.com/hbprasad0110-rgb/PawConnect.git
+git clone https://github.com/hbprasad0110-rgb/PawConnect.git
 cd PawConnect/frontend
 npm install
 npm run dev
@@ -105,7 +105,7 @@ Not available yet. The Express API (`backend/`) and the MySQL schema are still i
 
 ## Contributing
 
-Feature work happens on separate branches (for example `feature/auth`) that are merged into `development` through pull requests. At least one teammate reviews each change before it is merged.
+Feature work happens on separate branches (for example `feature/auth`) and is merged through pull requests. `main` needs at least one approving review from a teammate before a pull request can be merged.
 
 ## Team
 
