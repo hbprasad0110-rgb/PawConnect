@@ -1,4 +1,4 @@
-import { useApp } from '../../AppContext';
+import { useApp } from '../../ApiAppContext';
 
 export default function AdminAdoptionHistoryPage() {
   const { adoptionHistory, navigate } = useApp();

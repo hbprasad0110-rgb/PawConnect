@@ -1,22 +1,49 @@
-import { useState } from 'react';
-import { useApp } from '../../AppContext';
+import { useEffect, useState } from 'react';
+import { useApp } from '../../ApiAppContext';
+import type { MedicalRecord } from '../../types';
 
 export default function AdminMedicalRecordsPage() {
-  const { animals, addMedicalRecord } = useApp();
+  const { animals, addMedicalRecord, getMedicalRecords, updateMedicalRecord } = useApp();
   const [selectedAnimalId, setSelectedAnimalId] = useState<string>(animals[0]?.id ?? '');
   const [showAdd, setShowAdd] = useState(false);
+  const [records, setRecords] = useState<MedicalRecord[]>([]);
+  const [editing, setEditing] = useState<MedicalRecord | null>(null);
   const [newRecord, setNewRecord] = useState({ date: '', type: '', description: '', vet: '' });
 
   const selectedAnimal = animals.find(a => a.id === selectedAnimalId);
 
   const RECORD_TYPES = ['Intake Exam', 'Vaccination', 'Wellness Check', 'Dental Cleaning', 'Surgery', 'X-Ray', 'Lab Work', 'Follow-up', 'Microchip', 'Deworming', 'Emergency'];
 
-  const handleAdd = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (!selectedAnimalId && animals[0]) setSelectedAnimalId(animals[0].id);
+  }, [animals, selectedAnimalId]);
+
+  useEffect(() => {
+    if (!selectedAnimalId) return;
+    let active = true;
+    void getMedicalRecords(selectedAnimalId).then((rows) => {
+      if (active) setRecords(rows);
+    });
+    return () => { active = false; };
+  }, [getMedicalRecords, selectedAnimalId]);
+
+  const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newRecord.type || !newRecord.date || !newRecord.description || !newRecord.vet) return;
-    addMedicalRecord(selectedAnimalId, newRecord);
+    const created = await addMedicalRecord(selectedAnimalId, newRecord);
+    if (!created) return;
+    setRecords(await getMedicalRecords(selectedAnimalId));
     setNewRecord({ date: '', type: '', description: '', vet: '' });
     setShowAdd(false);
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editing) return;
+    const updated = await updateMedicalRecord(editing);
+    if (!updated) return;
+    setRecords(await getMedicalRecords(selectedAnimalId));
+    setEditing(null);
   };
 
   const inputCls = 'w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all';
@@ -42,7 +69,7 @@ export default function AdminMedicalRecordsPage() {
               {animals.map(animal => (
                 <button
                   key={animal.id}
-                  onClick={() => { setSelectedAnimalId(animal.id); setShowAdd(false); }}
+                  onClick={() => { setSelectedAnimalId(animal.id); setShowAdd(false); setEditing(null); }}
                   className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${selectedAnimalId === animal.id ? 'bg-blue-50 border-r-2 border-blue-500' : 'hover:bg-slate-50'}`}
                 >
                   <div className="w-9 h-9 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0">
@@ -119,26 +146,45 @@ export default function AdminMedicalRecordsPage() {
                 </form>
               )}
 
+              {editing && (
+                <form onSubmit={handleUpdate} className="bg-white rounded-2xl shadow-sm border border-amber-200 p-6 space-y-4">
+                  <h3 className="font-display font-700 text-slate-900">Edit Medical Record</h3>
+                  <div className="grid grid-cols-3 gap-4">
+                    <label className="text-xs font-semibold text-slate-600">Record Type<input required className={`${inputCls} mt-1.5`} value={editing.type} onChange={e => setEditing({ ...editing, type: e.target.value })} /></label>
+                    <label className="text-xs font-semibold text-slate-600">Date<input required type="date" className={`${inputCls} mt-1.5`} value={editing.date} onChange={e => setEditing({ ...editing, date: e.target.value })} /></label>
+                    <label className="text-xs font-semibold text-slate-600">Veterinarian<input required className={`${inputCls} mt-1.5`} value={editing.vet} onChange={e => setEditing({ ...editing, vet: e.target.value })} /></label>
+                  </div>
+                  <label className="block text-xs font-semibold text-slate-600">Description<textarea required rows={3} className={`${inputCls} mt-1.5 resize-none`} value={editing.description} onChange={e => setEditing({ ...editing, description: e.target.value })} /></label>
+                  <div className="flex gap-3">
+                    <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-2.5 rounded-xl text-sm">Save Changes</button>
+                    <button type="button" onClick={() => setEditing(null)} className="border border-slate-200 text-slate-600 px-6 py-2.5 rounded-xl text-sm font-semibold">Cancel</button>
+                  </div>
+                </form>
+              )}
+
               {/* Records list */}
               <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
                 <h3 className="font-display font-700 text-lg text-slate-900 mb-5">
-                  Medical History <span className="text-slate-400 font-normal text-base">({selectedAnimal.medicalRecords.length} records)</span>
+                  Medical History <span className="text-slate-400 font-normal text-base">({records.length} records)</span>
                 </h3>
-                {selectedAnimal.medicalRecords.length === 0 ? (
+                {records.length === 0 ? (
                   <div className="text-center py-8 text-slate-400">
                     <p className="text-3xl mb-2">🩺</p>
                     <p>No medical records yet. Add the first record above.</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {[...selectedAnimal.medicalRecords].reverse().map(record => (
+                    {[...records].reverse().map(record => (
                       <div key={record.id} className="p-4 bg-slate-50 rounded-xl border border-slate-100 hover:border-slate-200 transition-colors">
                         <div className="flex items-start justify-between mb-1">
                           <div className="flex items-center gap-2">
                             <span className="font-semibold text-slate-800">{record.type}</span>
                             <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">{record.date}</span>
                           </div>
-                          <span className="text-xs text-slate-400 font-medium">{record.vet}</span>
+                          <div className="flex items-center gap-3">
+                            <span className="text-xs text-slate-400 font-medium">{record.vet}</span>
+                            <button onClick={() => setEditing(record)} className="text-xs text-blue-600 hover:text-blue-700 font-semibold">Edit</button>
+                          </div>
                         </div>
                         <p className="text-slate-500 text-sm leading-relaxed">{record.description}</p>
                       </div>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useApp } from '../AppContext';
+import { useApp } from '../ApiAppContext';
 
 export default function RegisterPage() {
   const { register, navigate } = useApp();
@@ -26,11 +26,12 @@ export default function RegisterPage() {
     return e;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
-    register(form.name, form.email, form.password, form.phone, form.address);
+    const registered = await register(form.name, form.email, form.password, form.phone, form.address);
+    if (!registered) return;
     setSuccess(true);
     setTimeout(() => navigate('animals'), 1500);
   };

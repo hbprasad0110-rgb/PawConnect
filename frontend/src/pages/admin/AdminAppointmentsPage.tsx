@@ -1,4 +1,4 @@
-import { useApp } from '../../AppContext';
+import { useApp } from '../../ApiAppContext';
 import { AptStatusBadge } from '../../components/StatusBadge';
 
 export default function AdminAppointmentsPage() {
@@ -53,12 +53,6 @@ export default function AdminAppointmentsPage() {
                   className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-colors shadow-md shadow-blue-600/20 whitespace-nowrap"
                 >
                   Mark Completed
-                </button>
-                <button
-                  onClick={() => navigate('admin-complete-adoption', apt.animalId, undefined, apt.id)}
-                  className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-5 py-2.5 rounded-xl text-sm border border-emerald-200 transition-colors whitespace-nowrap"
-                >
-                  Complete Adoption
                 </button>
               </div>
             )}

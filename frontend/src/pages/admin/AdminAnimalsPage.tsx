@@ -1,9 +1,7 @@
 import { useState } from 'react';
-import { useApp } from '../../AppContext';
+import { useApp } from '../../ApiAppContext';
 import { AnimalStatusBadge } from '../../components/StatusBadge';
 import type { AnimalStatus, Animal } from '../../types';
-
-const STATUSES: AnimalStatus[] = ['AVAILABLE', 'APPLICATION_PENDING', 'APPROVED', 'FOSTERED', 'ADOPTED'];
 
 export default function AdminAnimalsPage() {
   const { animals, navigate, updateAnimalStatus, addAnimal } = useApp();
@@ -20,13 +18,14 @@ export default function AdminAnimalsPage() {
     !search || a.name.toLowerCase().includes(search.toLowerCase()) || a.breed.toLowerCase().includes(search.toLowerCase())
   );
 
-  const handleAdd = (e: React.FormEvent) => {
+  const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newAnimal.name || !newAnimal.breed) return;
-    addAnimal({
+    const created = await addAnimal({
       ...newAnimal,
       photo: newAnimal.photo || 'https://images.unsplash.com/photo-1583786693544-e352f898888d?w=600&h=450&fit=crop&auto=format',
     });
+    if (!created) return;
     setShowAdd(false);
     setNewAnimal({ name: '', type: 'DOG', breed: '', age: '', gender: 'Male', weight: '', color: '', status: 'AVAILABLE', description: '', photo: '', vaccinated: false, neutered: false, microchipped: false, healthSummary: '', arrivalDate: new Date().toISOString().split('T')[0], intakeReason: '' });
   };
@@ -104,16 +103,17 @@ export default function AdminAnimalsPage() {
                       onChange={e => updateAnimalStatus(animal.id, e.target.value as AnimalStatus)}
                       className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white focus:ring-2 focus:ring-blue-500/30 transition-all"
                     >
-                      {STATUSES.map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
+                      {(animal.status === 'AVAILABLE' || animal.status === 'FOSTERED'
+                        ? ['AVAILABLE', 'FOSTERED'] as AnimalStatus[]
+                        : [animal.status]
+                      ).map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
                     </select>
                   </td>
                   <td className="px-5 py-4">
-                    <button
-                      onClick={() => navigate('animal-profile', animal.id)}
-                      className="text-blue-600 hover:text-blue-700 font-semibold text-xs underline"
-                    >
-                      View Profile
-                    </button>
+                    <div className="flex gap-3">
+                      <button onClick={() => navigate('animal-profile', animal.id)} className="text-blue-600 hover:text-blue-700 font-semibold text-xs underline">View</button>
+                      <button onClick={() => navigate('admin-animal-edit', animal.id)} className="text-slate-600 hover:text-slate-900 font-semibold text-xs underline">Edit</button>
+                    </div>
                   </td>
                 </tr>
               ))}

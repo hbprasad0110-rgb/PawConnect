@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useApp } from '../../AppContext';
+import { useApp } from '../../ApiAppContext';
 
 export default function AdminCompleteAdoptionPage() {
   const { animals, appointments, selectedAnimalId, selectedAppointmentId, completeAdoption, navigate } = useApp();
@@ -31,8 +31,9 @@ export default function AdminCompleteAdoptionPage() {
     </div>
   );
 
-  const handleComplete = () => {
-    completeAdoption(appointment.id);
+  const handleComplete = async () => {
+    const completed = await completeAdoption(appointment.id);
+    if (!completed) return;
     setConfirmed(true);
   };
 
