@@ -1,0 +1,18 @@
+{
+  "name": "pawconnect",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Local development commands for the PawConnect application.",
+  "scripts": {
+    "dev": "npm run db:up && concurrently --kill-others-on-fail --names API,WEB --prefix-colors cyan,green \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
+    "setup": "npm install --prefix backend && npm install --prefix frontend && npm run db:up && npm run db:setup --prefix backend",
+    "db:up": "docker compose --env-file .env up -d --wait database",
+    "db:down": "docker compose --env-file .env down",
+    "db:status": "docker compose --env-file .env ps",
+    "build": "npm run build --prefix backend && npm run build --prefix frontend",
+    "test": "npm test --prefix backend && npm run typecheck --prefix frontend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
