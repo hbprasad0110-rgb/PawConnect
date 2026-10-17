@@ -1,4 +1,4 @@
-import { useApp } from '../AppContext';
+import { useApp } from '../ApiAppContext';
 import { AnimalStatusBadge } from '../components/StatusBadge';
 
 function PawIcon({ className = 'w-5 h-5' }: { className?: string }) {

@@ -1,5 +1,5 @@
 export type AnimalStatus = 'AVAILABLE' | 'APPLICATION_PENDING' | 'APPROVED' | 'FOSTERED' | 'ADOPTED';
-export type ApplicationStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'WITHDRAWN';
+export type ApplicationStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'WITHDRAWN' | 'COMPLETED';
 export type UserRole = 'ADOPTER' | 'ADMIN';
 export type AppointmentStatus = 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
 
@@ -39,7 +39,6 @@ export interface User {
   role: UserRole;
   phone: string;
   address: string;
-  password: string;
 }
 
 export interface Application {
@@ -88,6 +87,32 @@ export interface AdoptionRecord {
   appointmentId: string;
 }
 
+export interface AdminSummary {
+  totalAnimals: number;
+  availableAnimals: number;
+  pendingApplications: number;
+  upcomingAppointments: number;
+  completedAdoptions: number;
+}
+
+export interface AnimalStatusHistoryEntry {
+  id: string;
+  animalId: string;
+  fromStatus: AnimalStatus | null;
+  toStatus: AnimalStatus;
+  actorUserId: string;
+  createdAt: string;
+}
+
+export interface AnimalAdoptionRecord {
+  id: string;
+  animalId: string;
+  applicationId: string;
+  adopterId: string;
+  adoptedOn: string;
+  notes: string;
+}
+
 export type Page =
   | 'home'
   | 'animals'
@@ -99,8 +124,10 @@ export type Page =
   | 'schedule-appointment'
   | 'my-appointments'
   | 'my-adoption-history'
+  | 'profile'
   | 'admin-dashboard'
   | 'admin-animals'
+  | 'admin-animal-edit'
   | 'admin-medical-records'
   | 'admin-applications'
   | 'admin-appointments'

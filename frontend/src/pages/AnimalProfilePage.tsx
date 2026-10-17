@@ -1,9 +1,24 @@
-import { useApp } from '../AppContext';
+import { useEffect, useState } from 'react';
+import { useApp } from '../ApiAppContext';
 import { AnimalStatusBadge } from '../components/StatusBadge';
+import type { AnimalAdoptionRecord, AnimalStatusHistoryEntry } from '../types';
 
 export default function AnimalProfilePage() {
-  const { animals, currentUser, selectedAnimalId, navigate, applications } = useApp();
+  const { animals, currentUser, selectedAnimalId, navigate, applications, getAnimalAudit } = useApp();
+  const [statusHistory, setStatusHistory] = useState<AnimalStatusHistoryEntry[]>([]);
+  const [adoptionRecord, setAdoptionRecord] = useState<AnimalAdoptionRecord | null>(null);
   const animal = animals.find(a => a.id === selectedAnimalId);
+
+  useEffect(() => {
+    if (currentUser?.role !== 'ADMIN' || !selectedAnimalId) return;
+    let active = true;
+    void getAnimalAudit(selectedAnimalId).then((audit) => {
+      if (!active) return;
+      setStatusHistory(audit.history);
+      setAdoptionRecord(audit.adoption);
+    });
+    return () => { active = false; };
+  }, [currentUser?.role, getAnimalAudit, selectedAnimalId]);
 
   if (!animal) return (
     <div className="text-center py-20">
@@ -101,7 +116,7 @@ export default function AnimalProfilePage() {
             </div>
 
             {/* Adopt button */}
-            {animal.status !== 'ADOPTED' && (
+            {currentUser?.role !== 'ADMIN' && animal.status !== 'ADOPTED' && (
               <div>
                 {hasApplied ? (
                   <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 text-center">
@@ -176,6 +191,31 @@ export default function AnimalProfilePage() {
                 ))}
               </div>
             </div>
+
+            {currentUser?.role === 'ADMIN' && (
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-7">
+                <h2 className="font-display font-700 text-xl text-slate-900 mb-5">Status and Adoption Audit</h2>
+                {statusHistory.length === 0 ? (
+                  <p className="text-sm text-slate-400">No status changes have been recorded.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {statusHistory.map(entry => (
+                      <div key={entry.id} className="flex items-center justify-between border-b border-slate-100 pb-3 text-sm">
+                        <span className="text-slate-700"><strong>{entry.fromStatus?.replace('_', ' ') || 'NEW'}</strong> to <strong>{entry.toStatus.replace('_', ' ')}</strong></span>
+                        <span className="text-slate-400">{new Date(entry.createdAt).toLocaleString()}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {adoptionRecord && (
+                  <div className="mt-5 bg-emerald-50 border border-emerald-100 rounded-xl p-4 text-sm">
+                    <p className="font-semibold text-emerald-800">Adoption completed {adoptionRecord.adoptedOn}</p>
+                    <p className="text-emerald-700 mt-1">Application #{adoptionRecord.applicationId}; adopter #{adoptionRecord.adopterId}</p>
+                    {adoptionRecord.notes && <p className="text-emerald-700 mt-1">{adoptionRecord.notes}</p>}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

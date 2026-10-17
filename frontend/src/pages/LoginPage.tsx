@@ -1,31 +1,23 @@
 import { useState } from 'react';
-import { useApp } from '../AppContext';
+import { useApp } from '../ApiAppContext';
+import { appConfig } from '../config';
 
 export default function LoginPage() {
   const { login, navigate, loginError, setLoginError } = useApp();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [postLoginPage, setPostLoginPage] = useState<Parameters<typeof navigate>[0] | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const success = login(email, password);
-    if (success) {
-      navigate('home');
-    }
+    await login(email, password);
   };
 
-  const quickLogin = (preset: 'adopter' | 'admin') => {
-    const creds = preset === 'adopter'
-      ? { email: 'sarah@example.com', password: 'password123' }
-      : { email: 'admin@pawconnect.edu', password: 'admin123' };
+  const quickLogin = async (preset: 'adopter' | 'admin') => {
+    const creds = appConfig.demoAccounts[preset];
     setEmail(creds.email);
     setPassword(creds.password);
-    const success = login(creds.email, creds.password);
-    if (success) {
-      navigate(preset === 'admin' ? 'admin-dashboard' : 'home');
-    }
+    await login(creds.email, creds.password);
   };
 
   return (
@@ -82,7 +74,7 @@ export default function LoginPage() {
                   className="bg-white border border-blue-200 rounded-xl px-3 py-2.5 text-left hover:border-blue-400 transition-colors group"
                 >
                   <p className="text-xs font-bold text-blue-600 group-hover:text-blue-700">Adopter Login</p>
-                  <p className="text-xs text-slate-500 mt-0.5">sarah@example.com</p>
+                  <p className="text-xs text-slate-500 mt-0.5">{appConfig.demoAccounts.adopter.email}</p>
                 </button>
                 <button
                   type="button"
@@ -90,7 +82,7 @@ export default function LoginPage() {
                   className="bg-white border border-orange-200 rounded-xl px-3 py-2.5 text-left hover:border-orange-400 transition-colors group"
                 >
                   <p className="text-xs font-bold text-orange-600 group-hover:text-orange-700">Admin Login</p>
-                  <p className="text-xs text-slate-500 mt-0.5">admin@pawconnect.edu</p>
+                  <p className="text-xs text-slate-500 mt-0.5">{appConfig.demoAccounts.admin.email}</p>
                 </button>
               </div>
             </div>
