@@ -1,12 +1,26 @@
-import { useApp } from '../AppContext';
+import { useState } from 'react';
+import { useApp } from '../ApiAppContext';
 import { AppStatusBadge, AnimalStatusBadge } from '../components/StatusBadge';
+import type { Application } from '../types';
 
 export default function MyApplicationsPage() {
-  const { currentUser, applications, animals, navigate, withdrawApplication } = useApp();
+  const { currentUser, applications, animals, navigate, withdrawApplication, getApplicationDetails } = useApp();
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [details, setDetails] = useState<Application | null>(null);
 
   const myApps = applications.filter(a => a.adopterId === currentUser?.id);
 
   const getAnimal = (id: string) => animals.find(a => a.id === id);
+
+  const toggleDetails = async (applicationId: string) => {
+    if (expandedId === applicationId) {
+      setExpandedId(null);
+      return;
+    }
+    setExpandedId(applicationId);
+    setDetails(null);
+    setDetails(await getApplicationDetails(applicationId));
+  };
 
   return (
     <div className="fade-in min-h-screen bg-slate-50">
@@ -86,6 +100,12 @@ export default function MyApplicationsPage() {
                       {/* Actions */}
                       <div className="flex flex-col gap-2 ml-4 flex-shrink-0">
                         <button
+                          onClick={() => void toggleDetails(app.id)}
+                          className="text-sm text-slate-600 hover:text-slate-800 font-semibold border border-slate-200 hover:border-slate-300 px-4 py-2 rounded-lg transition-colors"
+                        >
+                          {expandedId === app.id ? 'Hide Details' : 'Application Details'}
+                        </button>
+                        <button
                           onClick={() => navigate('animal-profile', animal.id)}
                           className="text-sm text-blue-600 hover:text-blue-700 font-semibold border border-blue-200 hover:border-blue-300 px-4 py-2 rounded-lg transition-colors"
                         >
@@ -118,6 +138,16 @@ export default function MyApplicationsPage() {
                       </div>
                     </div>
                   </div>
+                  {expandedId === app.id && details && (
+                    <div className="border-t border-slate-100 bg-slate-50 px-5 py-4 grid grid-cols-2 gap-4 text-sm">
+                      <div><p className="font-semibold text-slate-700">Why I want to adopt</p><p className="text-slate-500 mt-1">{details.reason}</p></div>
+                      <div><p className="font-semibold text-slate-700">Pet experience</p><p className="text-slate-500 mt-1">{details.experience}</p></div>
+                      <div><p className="font-semibold text-slate-700">Living arrangement</p><p className="text-slate-500 mt-1">{details.livingArrangement}</p></div>
+                      <div><p className="font-semibold text-slate-700">Employment</p><p className="text-slate-500 mt-1">{details.employmentStatus}</p></div>
+                      <div><p className="font-semibold text-slate-700">Home and pets</p><p className="text-slate-500 mt-1">{details.hasYard ? 'Has a yard' : 'No yard'}; {details.hasOtherPets ? details.otherPetsDescription || 'has other pets' : 'no other pets'}</p></div>
+                      <div><p className="font-semibold text-slate-700">References</p><p className="text-slate-500 mt-1">{details.references}</p></div>
+                    </div>
+                  )}
                 </div>
               );
             })}

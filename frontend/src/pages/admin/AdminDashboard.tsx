@@ -1,13 +1,13 @@
-import { useApp } from '../../AppContext';
+import { useApp } from '../../ApiAppContext';
 
 export default function AdminDashboard() {
-  const { animals, applications, appointments, adoptionHistory, navigate } = useApp();
+  const { animals, applications, appointments, adoptionHistory, adminSummary, navigate } = useApp();
 
-  const available = animals.filter(a => a.status === 'AVAILABLE').length;
-  const pending = applications.filter(a => a.status === 'PENDING').length;
+  const available = adminSummary?.availableAnimals ?? animals.filter(a => a.status === 'AVAILABLE').length;
+  const pending = adminSummary?.pendingApplications ?? applications.filter(a => a.status === 'PENDING').length;
   const approved = applications.filter(a => a.status === 'APPROVED').length;
-  const scheduled = appointments.filter(a => a.status === 'SCHEDULED').length;
-  const totalAdopted = adoptionHistory.length;
+  const scheduled = adminSummary?.upcomingAppointments ?? appointments.filter(a => a.status === 'SCHEDULED').length;
+  const totalAdopted = adminSummary?.completedAdoptions ?? adoptionHistory.length;
 
   const StatCard = ({ label, value, color, icon, onClick }: {
     label: string; value: number; color: string; icon: React.ReactNode; onClick?: () => void;

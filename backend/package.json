@@ -1,18 +1,45 @@
 {
   "name": "pawconnect-backend",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "node --watch src/server.js"
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/src/server.js",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test tests/animalStatus.test.ts tests/health.test.ts",
+    "db:create": "node scripts/create-database.mjs",
+    "db:migrate": "knex migrate:latest --knexfile knexfile.cjs",
+    "db:rollback": "knex migrate:rollback --knexfile knexfile.cjs",
+    "db:seed": "knex seed:run --knexfile knexfile.cjs",
+    "db:setup": "npm run db:migrate && npm run db:seed",
+    "db:setup:native": "npm run db:create && npm run db:migrate && npm run db:seed",
+    "db:docker:up": "docker compose --env-file ../.env -f ../compose.yaml up -d database",
+    "db:docker:down": "docker compose --env-file ../.env -f ../compose.yaml down",
+    "db:docker:logs": "docker compose --env-file ../.env -f ../compose.yaml logs -f database"
   },
   "dependencies": {
-    "bcrypt": "^5.1.1",
+    "bcryptjs": "^3.0.2",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
-    "mysql2": "^3.11.5"
+    "knex": "^3.1.0",
+    "mysql2": "^3.11.5",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/cookie-parser": "^1.4.8",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/jsonwebtoken": "^9.0.9",
+    "@types/node": "^22.13.4",
+    "@types/supertest": "^6.0.2",
+    "supertest": "^7.0.0",
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3"
   }
 }

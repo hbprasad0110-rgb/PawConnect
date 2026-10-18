@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useApp } from '../AppContext';
+import { useApp } from '../ApiAppContext';
 import { AnimalStatusBadge } from '../components/StatusBadge';
 import type { AnimalStatus } from '../types';
 

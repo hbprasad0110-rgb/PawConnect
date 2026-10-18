@@ -1,14 +1,8 @@
-import { useState } from 'react';
-import { useApp } from '../AppContext';
-
-const TIME_SLOTS = [
-  '9:00 AM', '9:30 AM', '10:00 AM', '10:30 AM',
-  '11:00 AM', '11:30 AM', '1:00 PM', '1:30 PM',
-  '2:00 PM', '2:30 PM', '3:00 PM', '3:30 PM', '4:00 PM',
-];
+import { useEffect, useState } from 'react';
+import { useApp } from '../ApiAppContext';
 
 export default function ScheduleAppointmentPage() {
-  const { animals, selectedAnimalId, selectedApplicationId, currentUser, scheduleAppointment, navigate } = useApp();
+  const { animals, selectedAnimalId, selectedApplicationId, currentUser, scheduleAppointment, getAppointmentAvailability, navigate } = useApp();
   const animal = animals.find(a => a.id === selectedAnimalId);
 
   const [date, setDate] = useState('');
@@ -16,6 +10,21 @@ export default function ScheduleAppointmentPage() {
   const [notes, setNotes] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
+  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+
+  useEffect(() => {
+    if (!date || !selectedAnimalId) {
+      setAvailableSlots([]);
+      return;
+    }
+    setTime('');
+    setLoadingSlots(true);
+    void getAppointmentAvailability(date, selectedAnimalId).then((slots) => {
+      setAvailableSlots(slots.map((slot) => new Date(slot).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })));
+      setLoadingSlots(false);
+    });
+  }, [date, getAppointmentAvailability, selectedAnimalId]);
 
   if (!animal || !currentUser || !selectedApplicationId) return null;
 
@@ -29,11 +38,12 @@ export default function ScheduleAppointmentPage() {
     return e;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
-    scheduleAppointment(selectedApplicationId, animal.id, date, time, notes);
+    const created = await scheduleAppointment(selectedApplicationId, animal.id, date, time, notes);
+    if (!created) return;
     setSubmitted(true);
   };
 
@@ -104,7 +114,7 @@ export default function ScheduleAppointmentPage() {
                 <h2 className="font-display font-700 text-lg text-slate-900 mb-4">Select a Time</h2>
                 {errors.time && <p className="text-red-600 text-xs mb-2">{errors.time}</p>}
                 <div className="grid grid-cols-4 gap-2">
-                  {TIME_SLOTS.map(slot => (
+                  {availableSlots.map(slot => (
                     <button
                       key={slot}
                       type="button"
@@ -119,6 +129,9 @@ export default function ScheduleAppointmentPage() {
                     </button>
                   ))}
                 </div>
+                {!date && <p className="text-sm text-slate-400">Select a date to load available times.</p>}
+                {loadingSlots && <p className="text-sm text-slate-400">Checking availability...</p>}
+                {date && !loadingSlots && availableSlots.length === 0 && <p className="text-sm text-amber-600">No appointment times are available on this date.</p>}
               </div>
 
               {/* Notes */}

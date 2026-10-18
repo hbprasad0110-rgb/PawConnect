@@ -1,4 +1,4 @@
-import { useApp } from '../AppContext';
+import { useApp } from '../ApiAppContext';
 
 function PawIcon({ className = 'w-7 h-7' }: { className?: string }) {
   return (
@@ -68,9 +68,9 @@ export default function Navbar() {
               {navLink('My Appointments', 'my-appointments')}
               {navLink('Adoption History', 'my-adoption-history')}
               <div className="flex items-center gap-3 ml-2">
-                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                <button onClick={() => navigate('profile')} title="Profile" aria-label="Profile" className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
                   <span className="text-blue-700 font-bold text-sm">{currentUser.name[0]}</span>
-                </div>
+                </button>
                 <button
                   onClick={logout}
                   className="text-slate-400 hover:text-slate-700 text-sm transition-colors"

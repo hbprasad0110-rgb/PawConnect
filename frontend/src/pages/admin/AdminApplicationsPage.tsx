@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { useApp } from '../../AppContext';
+import { useApp } from '../../ApiAppContext';
 import { AppStatusBadge, AnimalStatusBadge } from '../../components/StatusBadge';
-import type { ApplicationStatus } from '../../types';
+import type { Application, ApplicationStatus } from '../../types';
 
 const STATUS_TABS: { label: string; value: ApplicationStatus | 'ALL' }[] = [
   { label: 'All', value: 'ALL' },
@@ -9,13 +9,22 @@ const STATUS_TABS: { label: string; value: ApplicationStatus | 'ALL' }[] = [
   { label: 'Approved', value: 'APPROVED' },
   { label: 'Rejected', value: 'REJECTED' },
   { label: 'Withdrawn', value: 'WITHDRAWN' },
+  { label: 'Completed', value: 'COMPLETED' },
 ];
 
 export default function AdminApplicationsPage() {
-  const { applications, animals, approveApplication, rejectApplication } = useApp();
+  const { applications, animals, approveApplication, rejectApplication, getApplicationDetails } = useApp();
   const [filter, setFilter] = useState<ApplicationStatus | 'ALL'>('ALL');
   const [expanded, setExpanded] = useState<string | null>(null);
   const [confirmAction, setConfirmAction] = useState<{ id: string; action: 'approve' | 'reject' } | null>(null);
+  const [details, setDetails] = useState<Record<string, Application>>({});
+
+  const toggleApplication = async (application: Application) => {
+    if (expanded === application.id) { setExpanded(null); return; }
+    const detail = await getApplicationDetails(application.id);
+    if (detail) setDetails((current) => ({ ...current, [application.id]: detail }));
+    setExpanded(application.id);
+  };
 
   const getAnimal = (id: string) => animals.find(a => a.id === id);
 
@@ -27,12 +36,15 @@ export default function AdminApplicationsPage() {
     APPROVED: applications.filter(a => a.status === 'APPROVED').length,
     REJECTED: applications.filter(a => a.status === 'REJECTED').length,
     WITHDRAWN: applications.filter(a => a.status === 'WITHDRAWN').length,
+    COMPLETED: applications.filter(a => a.status === 'COMPLETED').length,
   };
 
-  const handleAction = () => {
+  const handleAction = async () => {
     if (!confirmAction) return;
-    if (confirmAction.action === 'approve') approveApplication(confirmAction.id);
-    else rejectApplication(confirmAction.id);
+    const succeeded = confirmAction.action === 'approve'
+      ? await approveApplication(confirmAction.id)
+      : await rejectApplication(confirmAction.id);
+    if (!succeeded) return;
     setConfirmAction(null);
     setExpanded(null);
   };
@@ -74,12 +86,13 @@ export default function AdminApplicationsPage() {
           ) : filtered.map(app => {
             const animal = getAnimal(app.animalId);
             const isExpanded = expanded === app.id;
+            const detail = details[app.id] || app;
 
             return (
               <div key={app.id} className={`bg-white rounded-2xl shadow-sm border transition-all duration-200 ${isExpanded ? 'border-blue-200' : 'border-slate-100 hover:border-slate-200'}`}>
                 {/* Summary row */}
                 <button
-                  onClick={() => setExpanded(isExpanded ? null : app.id)}
+                  onClick={() => void toggleApplication(app)}
                   className="w-full flex items-center gap-4 p-5 text-left"
                 >
                   {animal && (
@@ -109,16 +122,16 @@ export default function AdminApplicationsPage() {
                   <div className="border-t border-slate-100 p-5 bg-slate-50/50 space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-3">
-                        <DetailRow label="Why they want to adopt" value={app.reason} />
-                        <DetailRow label="Pet experience" value={app.experience} />
-                        <DetailRow label="Living arrangement" value={app.livingArrangement} />
-                        <DetailRow label="Has yard" value={app.hasYard ? 'Yes' : 'No'} />
+                        <DetailRow label="Why they want to adopt" value={detail.reason} />
+                        <DetailRow label="Pet experience" value={detail.experience} />
+                        <DetailRow label="Living arrangement" value={detail.livingArrangement} />
+                        <DetailRow label="Has yard" value={detail.hasYard ? 'Yes' : 'No'} />
                       </div>
                       <div className="space-y-3">
-                        <DetailRow label="Has other pets" value={app.hasOtherPets ? `Yes, ${app.otherPetsDescription}` : 'No'} />
-                        <DetailRow label="Employment status" value={app.employmentStatus} />
-                        <DetailRow label="References" value={app.references} />
-                        {app.reviewedDate && <DetailRow label="Review date" value={app.reviewedDate} />}
+                        <DetailRow label="Has other pets" value={detail.hasOtherPets ? `Yes, ${detail.otherPetsDescription}` : 'No'} />
+                        <DetailRow label="Employment status" value={detail.employmentStatus} />
+                        <DetailRow label="References" value={detail.references} />
+                        {detail.reviewedDate && <DetailRow label="Review date" value={detail.reviewedDate} />}
                       </div>
                     </div>
 

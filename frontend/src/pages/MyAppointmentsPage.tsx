@@ -1,8 +1,8 @@
-import { useApp } from '../AppContext';
+import { useApp } from '../ApiAppContext';
 import { AptStatusBadge } from '../components/StatusBadge';
 
 export default function MyAppointmentsPage() {
-  const { currentUser, appointments, animals, navigate } = useApp();
+  const { currentUser, appointments, animals, navigate, cancelAppointment } = useApp();
   const myApts = appointments.filter(a => a.adopterId === currentUser?.id);
   const getAnimal = (id: string) => animals.find(a => a.id === id);
 
@@ -56,6 +56,14 @@ export default function MyAppointmentsPage() {
                   className="text-sm text-blue-600 hover:text-blue-700 font-semibold border border-blue-200 hover:border-blue-300 px-4 py-2 rounded-lg transition-colors"
                 >
                   View Animal
+                </button>
+              )}
+              {apt.status === 'SCHEDULED' && (
+                <button
+                  onClick={() => { if (window.confirm('Cancel this appointment?')) void cancelAppointment(apt.id); }}
+                  className="text-sm text-red-600 hover:text-red-700 font-semibold border border-red-200 px-4 py-2 rounded-lg"
+                >
+                  Cancel
                 </button>
               )}
             </div>

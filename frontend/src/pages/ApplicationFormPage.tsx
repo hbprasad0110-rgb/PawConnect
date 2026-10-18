@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useApp } from '../AppContext';
+import { useApp } from '../ApiAppContext';
 
 export default function ApplicationFormPage() {
   const { animals, selectedAnimalId, currentUser, applyForAdoption, navigate } = useApp();
@@ -34,11 +34,12 @@ export default function ApplicationFormPage() {
     return e;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
-    applyForAdoption(animal.id, form);
+    const created = await applyForAdoption(animal.id, form);
+    if (!created) return;
     setSubmitted(true);
   };
 
