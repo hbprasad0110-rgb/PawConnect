@@ -88,7 +88,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     ?? null;
 
   const loadAnimals = useCallback(async (admin = false) => {
-    const rows = await api.animals(admin);
+    // The public list leaves adopted animals out, but they still have profiles, filters and adoption records to show.
+    const rows = admin ? await api.animals(true) : (await Promise.all([api.animals(false), api.adoptedAnimals()])).flat();
     const detailed = await Promise.all(rows.map((row) => api.animal(String(row.id))));
     setAnimals(detailed);
   }, []);
