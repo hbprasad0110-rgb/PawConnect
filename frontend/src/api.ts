@@ -149,6 +149,7 @@ export const api = {
   profile: () => request<Raw>('/auth/profile').then(mapUser),
   updateProfile: (body: { firstName: string; lastName: string; phone: string; address: string }) => request<Raw>('/auth/profile', put(body)).then(mapUser),
   animals: (admin = false) => request<Raw[]>(admin ? '/admin/animals' : `/animals?pageSize=${appConfig.animalPageSize}`),
+  adoptedAnimals: () => request<Raw[]>(`/animals?status=adopted&pageSize=${appConfig.animalPageSize}`),
   animal: (id: string) => request<Raw>(`/animals/${id}`).then(mapAnimal),
   adminAnimal: (id: string) => request<Raw>(`/admin/animals/${id}`).then(mapAnimal),
   updateAnimal: (id: string, body: unknown) => request<Raw>(`/admin/animals/${id}`, put(body)).then(mapAnimal),
