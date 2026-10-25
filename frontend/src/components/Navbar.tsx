@@ -19,7 +19,7 @@ export default function Navbar() {
     <button
       key={label}
       onClick={() => navigate(page)}
-      className="text-slate-600 hover:text-blue-600 font-medium text-sm transition-colors duration-150 px-1"
+      className="text-slate-600 hover:text-blue-600 font-medium text-sm transition-colors duration-150 px-1 whitespace-nowrap"
     >
       {label}
     </button>
@@ -27,7 +27,7 @@ export default function Navbar() {
 
   return (
     <nav className="bg-white border-b border-slate-100 sticky top-0 z-50 shadow-sm">
-      <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 min-h-16 py-3 flex flex-wrap items-center justify-between gap-3">
         {/* Logo */}
         <button
           onClick={() => navigate('home')}
@@ -42,7 +42,7 @@ export default function Navbar() {
         </button>
 
         {/* Nav Links */}
-        <div className="flex items-center gap-6">
+        <div className="w-full md:w-auto order-3 md:order-none flex items-center gap-5 overflow-x-auto scrollbar-hide pb-1 md:pb-0">
           {!currentUser && (
             <>
               {navLink('Browse Animals', 'animals')}

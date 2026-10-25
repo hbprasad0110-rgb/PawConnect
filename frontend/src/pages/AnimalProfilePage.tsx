@@ -185,6 +185,11 @@ export default function AnimalProfilePage() {
                         <span className="text-xs text-slate-400">{record.date}</span>
                       </div>
                       <p className="text-slate-500 text-sm leading-relaxed">{record.description}</p>
+                      {(record.vaccination || record.healthStatus || record.treatment) && <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2 text-xs text-slate-500">
+                        <span><strong>Vaccination:</strong> {record.vaccination || 'N/A'}</span>
+                        <span><strong>Health:</strong> {record.healthStatus || 'N/A'}</span>
+                        <span><strong>Treatment:</strong> {record.treatment || 'N/A'}</span>
+                      </div>}
                       <p className="text-xs text-blue-500 mt-1 font-medium">Dr. {record.vet.replace('Dr. ', '')}</p>
                     </div>
                   </div>
@@ -200,8 +205,8 @@ export default function AnimalProfilePage() {
                 ) : (
                   <div className="space-y-3">
                     {statusHistory.map(entry => (
-                      <div key={entry.id} className="flex items-center justify-between border-b border-slate-100 pb-3 text-sm">
-                        <span className="text-slate-700"><strong>{entry.fromStatus?.replace('_', ' ') || 'NEW'}</strong> to <strong>{entry.toStatus.replace('_', ' ')}</strong></span>
+                      <div key={entry.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-slate-100 pb-3 text-sm">
+                        <span className="text-slate-700"><strong>{entry.fromStatus?.replace('_', ' ') || 'NEW'}</strong> to <strong>{entry.toStatus.replace('_', ' ')}</strong>{entry.notes && <span className="block text-xs text-slate-400 mt-1">{entry.notes}</span>}</span>
                         <span className="text-slate-400">{new Date(entry.createdAt).toLocaleString()}</span>
                       </div>
                     ))}

@@ -7,6 +7,8 @@ export const appConfig = {
     cookieName: 'pc_token',
     tokenLifetime: '8h',
     sessionDurationMs: 8 * 60 * 60 * 1000,
+    passwordResetLifetimeMs: 30 * 60 * 1000,
+    passwordResetCooldownMs: 60 * 1000,
   },
   database: {
     poolMin: 0,

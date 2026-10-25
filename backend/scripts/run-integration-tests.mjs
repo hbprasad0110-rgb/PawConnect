@@ -49,7 +49,7 @@ try {
 
 const child = spawn(process.execPath, ['--import', 'tsx', '--test', 'tests/api.integration.test.ts'], {
   cwd: backendRoot,
-  env: { ...process.env, NODE_ENV: 'test' },
+  env: { ...process.env, NODE_ENV: 'test', EMAIL_MODE: 'log' },
   stdio: 'inherit',
 });
 

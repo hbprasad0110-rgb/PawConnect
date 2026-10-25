@@ -40,6 +40,7 @@ export default function MyAppointmentsPage() {
                   <span className="font-semibold">{apt.time}</span>
                 </div>
               </div>
+              <p className="text-xs text-slate-500 mt-2"><strong>Purpose:</strong> {apt.purpose}</p>
               {apt.notes && (
                 <p className="text-xs text-slate-400 mt-2 max-w-md">📝 {apt.notes}</p>
               )}

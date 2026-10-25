@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import type { AdminSummary, AdoptionRecord, Animal, AnimalAdoptionRecord, AnimalSearchFilters, AnimalStatus, AnimalStatusHistoryEntry, Appointment, Application, MedicalRecord, Page, PageMeta, User } from './types';
+import type { AdminSummary, AdoptionRecord, Animal, AnimalAdoptionRecord, AnimalSearchFilters, AnimalStatus, AnimalStatusHistoryEntry, Appointment, Application, MedicalRecord, Page, PageMeta, PublicSummary, User } from './types';
 import { ageToMonths, api, ApiClientError, mapAdoption, mapApplication, mapAppointment } from './api';
 
 type ApplicationDraft = Omit<Application, 'id' | 'animalId' | 'adopterId' | 'adopterName' | 'adopterEmail' | 'status' | 'submittedDate' | 'decisionNote'>;
@@ -15,6 +15,7 @@ interface AppContextType {
   appointments: Appointment[];
   adoptionHistory: AdoptionRecord[];
   adminSummary: AdminSummary | null;
+  publicSummary: PublicSummary | null;
   loginError: string;
   appError: string;
   isLoading: boolean;
@@ -26,7 +27,7 @@ interface AppContextType {
   approveApplication: (applicationId: string, decisionNote: string) => Promise<boolean>;
   rejectApplication: (applicationId: string, decisionNote: string) => Promise<boolean>;
   withdrawApplication: (applicationId: string) => Promise<boolean>;
-  scheduleAppointment: (applicationId: string, animalId: string, date: string, time: string, notes: string) => Promise<boolean>;
+  scheduleAppointment: (applicationId: string, animalId: string, date: string, time: string, purpose: string, notes: string) => Promise<boolean>;
   completeAppointment: (appointmentId: string) => Promise<boolean>;
   confirmAppointment: (appointmentId: string) => Promise<boolean>;
   cancelAdminAppointment: (appointmentId: string) => Promise<boolean>;
@@ -66,7 +67,7 @@ const appointmentDateTime = (date: string, time: string) => {
 };
 
 const pageValues: Page[] = [
-  'home', 'animals', 'animal-profile', 'login', 'register', 'apply', 'my-applications',
+  'home', 'animals', 'animal-profile', 'login', 'register', 'forgot-password', 'reset-password', 'apply', 'my-applications',
   'schedule-appointment', 'my-appointments', 'my-adoption-history', 'profile', 'admin-dashboard',
   'admin-animals', 'admin-animal-edit', 'admin-medical-records', 'admin-applications',
   'admin-appointments', 'admin-complete-adoption', 'admin-adoption-history',
@@ -105,9 +106,26 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [adoptionHistory, setAdoptionHistory] = useState<AdoptionRecord[]>([]);
   const [adminSummary, setAdminSummary] = useState<AdminSummary | null>(null);
+  const [publicSummary, setPublicSummary] = useState<PublicSummary | null>(null);
   const [loginError, setLoginError] = useState('');
   const [appError, setAppError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      if (!currentUser) return;
+      setCurrentUser(null);
+      setApplications([]);
+      setAppointments([]);
+      setAdoptionHistory([]);
+      setAdminSummary(null);
+      setAppError('Your session expired. Please sign in again.');
+      setCurrentPage('login');
+      window.location.hash = routeHash('login');
+    };
+    window.addEventListener('pawconnect:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('pawconnect:unauthorized', handleUnauthorized);
+  }, [currentUser]);
 
   const loadAnimals = useCallback(async (admin = false) => {
     const rows = await api.animals(admin);
@@ -139,6 +157,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const initialize = async () => {
       try {
         await api.health();
+        setPublicSummary(await api.publicSummary());
         const user = await api.session();
         if (!active) return;
         setCurrentUser(user);
@@ -248,8 +267,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const rejectApplication = useCallback((id: string, decisionNote: string) => runAndRefresh(() => api.decideApplication(id, 'rejected', decisionNote)), [runAndRefresh]);
   const withdrawApplication = useCallback((id: string) => runAndRefresh(() => api.withdrawApplication(id)), [runAndRefresh]);
 
-  const scheduleAppointment = useCallback((applicationId: string, _animalId: string, date: string, time: string, notes: string) =>
-    runAndRefresh(() => api.createAppointment({ applicationId: Number(applicationId), startsAt: appointmentDateTime(date, time), notes })), [runAndRefresh]);
+  const scheduleAppointment = useCallback((applicationId: string, _animalId: string, date: string, time: string, purpose: string, notes: string) =>
+    runAndRefresh(() => api.createAppointment({ applicationId: Number(applicationId), startsAt: appointmentDateTime(date, time), purpose, notes })), [runAndRefresh]);
 
   const completeAppointment = useCallback((id: string) => runAndRefresh(() => api.setAppointmentStatus(id, 'completed')), [runAndRefresh]);
   const confirmAppointment = useCallback((id: string) => runAndRefresh(() => api.setAppointmentStatus(id, 'confirmed')), [runAndRefresh]);
@@ -313,6 +332,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     description: record.description,
     administeredOn: record.date,
     vetName: record.vet || null,
+    vaccination: record.vaccination || null,
+    healthStatus: record.healthStatus || null,
+    treatment: record.treatment || null,
     notes: record.notes || null,
   })), [runAndRefresh]);
 
@@ -321,6 +343,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     description: record.description,
     administeredOn: record.date,
     vetName: record.vet || null,
+    vaccination: record.vaccination || null,
+    healthStatus: record.healthStatus || null,
+    treatment: record.treatment || null,
     notes: record.notes || null,
   })), [runAndRefresh]);
 
@@ -406,7 +431,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   return (
     <AppContext.Provider value={{
       currentUser, currentPage, selectedAnimalId, selectedApplicationId, selectedAppointmentId,
-      animals, applications, appointments, adoptionHistory, adminSummary,
+      animals, applications, appointments, adoptionHistory, adminSummary, publicSummary,
       loginError, appError, isLoading,
       navigate, login, logout, register, applyForAdoption, approveApplication, rejectApplication,
       withdrawApplication, scheduleAppointment, completeAppointment, confirmAppointment, cancelAdminAppointment, completeAdoption,

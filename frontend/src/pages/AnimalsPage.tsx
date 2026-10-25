@@ -62,7 +62,7 @@ export default function AnimalsPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-8 flex gap-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 flex flex-col lg:flex-row gap-8">
         {/* Sidebar filters */}
         <aside className="w-60 flex-shrink-0 space-y-6">
           <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">

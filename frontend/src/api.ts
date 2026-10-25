@@ -1,4 +1,4 @@
-import type { AdminSummary, AdoptionRecord, Animal, AnimalAdoptionRecord, AnimalSearchFilters, AnimalStatusHistoryEntry, Appointment, Application, MedicalRecord, PageMeta, User } from './types';
+import type { AdminSummary, AdoptionRecord, Animal, AnimalAdoptionRecord, AnimalSearchFilters, AnimalStatusHistoryEntry, Appointment, Application, MedicalRecord, PageMeta, PublicSummary, User } from './types';
 import { appConfig } from './config';
 
 export class ApiClientError extends Error {
@@ -22,6 +22,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
+    if (response.status === 401) window.dispatchEvent(new Event('pawconnect:unauthorized'));
     throw new ApiClientError(
       response.status,
       payload?.error?.code || 'REQUEST_FAILED',
@@ -34,7 +35,10 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 async function requestPage<T>(path: string): Promise<{ data: T; meta: PageMeta }> {
   const response = await fetch(`${appConfig.apiBase}${path}`, { credentials: 'include' });
   const payload = await response.json().catch(() => ({})) as PagedApiEnvelope<T> & { error?: { code?: string; message?: string } };
-  if (!response.ok) throw new ApiClientError(response.status, payload.error?.code || 'REQUEST_FAILED', payload.error?.message || 'The request could not be completed.');
+  if (!response.ok) {
+    if (response.status === 401) window.dispatchEvent(new Event('pawconnect:unauthorized'));
+    throw new ApiClientError(response.status, payload.error?.code || 'REQUEST_FAILED', payload.error?.message || 'The request could not be completed.');
+  }
   return { data: payload.data, meta: payload.meta };
 }
 
@@ -64,6 +68,9 @@ export const mapMedicalRecord = (row: Raw): MedicalRecord => ({
   type: row.recordType || '',
   description: row.description || '',
   vet: row.vetName || '',
+  vaccination: row.vaccination || '',
+  healthStatus: row.healthStatus || '',
+  treatment: row.treatment || '',
   notes: row.notes || '',
 });
 
@@ -129,6 +136,7 @@ export const mapAppointment = (row: Raw): Appointment => {
     date: Number.isNaN(startsAt.getTime()) ? '' : startsAt.toLocaleDateString(),
     time: Number.isNaN(startsAt.getTime()) ? '' : startsAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
     status: status(row.status) as Appointment['status'],
+    purpose: row.purpose || 'Meet and greet',
     notes: row.notes || '',
   };
 };
@@ -163,12 +171,15 @@ export const api = {
   session: () => request<Raw>('/auth/me').then(mapUser),
   login: (email: string, password: string) => request<Raw>('/auth/login', json({ email, password })).then(mapUser),
   register: (body: { name: string; email: string; password: string; phone: string; address: string }) => request<Raw>('/auth/register', json(body)).then(mapUser),
+  forgotPassword: (email: string) => request<{ message: string }>('/auth/forgot-password', json({ email })),
+  resetPassword: (token: string, password: string) => request<{ message: string }>('/auth/reset-password', json({ token, password })),
   logout: () => request('/auth/logout', { method: 'POST' }),
   profile: () => request<Raw>('/auth/profile').then(mapUser),
   updateProfile: (body: { firstName: string; lastName: string; phone: string; address: string }) => request<Raw>('/auth/profile', put(body)).then(mapUser),
   animals: (admin = false) => request<Raw[]>(admin ? '/admin/animals' : `/animals?pageSize=${appConfig.animalPageSize}&includeAdopted=true`),
   searchAnimals: (filters: AnimalSearchFilters) => requestPage<Raw[]>(`/animals?${queryString({ pageSize: appConfig.animalPageSize, ...filters })}`).then(({ data, meta }) => ({ items: data.map(mapAnimal), meta })),
   animal: (id: string) => request<Raw>(`/animals/${id}`).then(mapAnimal),
+  publicSummary: () => request<PublicSummary>('/animals/stats/summary'),
   adminAnimal: (id: string) => request<Raw>(`/admin/animals/${id}`).then(mapAnimal),
   updateAnimal: (id: string, body: unknown) => request<Raw>(`/admin/animals/${id}`, put(body)).then(mapAnimal),
   medicalRecords: (animalId: string) => request<Raw[]>(`/admin/animals/${animalId}/medical-records`).then((rows) => rows.map(mapMedicalRecord)),
@@ -194,7 +205,7 @@ export const api = {
   })),
   animalStatusHistory: (animalId: string) => request<Raw[]>(`/admin/animals/${animalId}/status-history`).then((rows): AnimalStatusHistoryEntry[] => rows.map((row) => ({
     id: asId(row.id), animalId: asId(row.animalId), fromStatus: row.fromStatus ? status(row.fromStatus) as AnimalStatusHistoryEntry['fromStatus'] : null,
-    toStatus: status(row.toStatus) as AnimalStatusHistoryEntry['toStatus'], actorUserId: asId(row.actorUserId), createdAt: String(row.createdAt || ''),
+    toStatus: status(row.toStatus) as AnimalStatusHistoryEntry['toStatus'], actorUserId: asId(row.actorUserId), notes: row.notes || '', createdAt: String(row.createdAt || ''),
   }))),
   completeAdoption: (applicationId: string, body: { adoptedOn?: string; notes: string }) => request(`/admin/applications/${applicationId}/complete-adoption`, json(body)),
   setAnimalStatus: (id: string, nextStatus: 'available' | 'fostered') => request(`/admin/animals/${id}/status`, patch({ status: nextStatus })),

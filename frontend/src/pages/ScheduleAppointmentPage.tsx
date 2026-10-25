@@ -7,6 +7,7 @@ export default function ScheduleAppointmentPage() {
 
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
+  const [purpose, setPurpose] = useState('Meet and greet');
   const [notes, setNotes] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
@@ -42,7 +43,7 @@ export default function ScheduleAppointmentPage() {
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
-    const created = await scheduleAppointment(selectedApplicationId, animal.id, date, time, notes);
+    const created = await scheduleAppointment(selectedApplicationId, animal.id, date, time, purpose, notes);
     if (!created) return;
     setSubmitted(true);
   };
@@ -136,6 +137,13 @@ export default function ScheduleAppointmentPage() {
 
               {/* Notes */}
               <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+                <h2 className="font-display font-700 text-lg text-slate-900 mb-2">Purpose</h2>
+                <input
+                  required
+                  value={purpose}
+                  onChange={e => setPurpose(e.target.value)}
+                  className="w-full px-4 py-3 mb-5 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all"
+                />
                 <h2 className="font-display font-700 text-lg text-slate-900 mb-2">Additional Notes</h2>
                 <p className="text-slate-400 text-xs mb-4">Any questions or things you'd like us to know before your visit.</p>
                 <textarea

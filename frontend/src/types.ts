@@ -9,6 +9,9 @@ export interface MedicalRecord {
   type: string;
   description: string;
   vet: string;
+  vaccination: string;
+  healthStatus: string;
+  treatment: string;
   notes: string;
 }
 
@@ -73,7 +76,16 @@ export interface Appointment {
   date: string;
   time: string;
   status: AppointmentStatus;
+  purpose: string;
   notes: string;
+}
+
+export interface PublicSummary {
+  animalsRehomed: number;
+  availableAnimals: number;
+  animalsInFosterCare: number;
+  veterinaryPartners: number;
+  adoptionsThisMonth: number;
 }
 
 export interface AdoptionRecord {
@@ -124,6 +136,7 @@ export interface AnimalStatusHistoryEntry {
   fromStatus: AnimalStatus | null;
   toStatus: AnimalStatus;
   actorUserId: string;
+  notes: string;
   createdAt: string;
 }
 
@@ -142,6 +155,8 @@ export type Page =
   | 'animal-profile'
   | 'login'
   | 'register'
+  | 'forgot-password'
+  | 'reset-password'
   | 'apply'
   | 'my-applications'
   | 'schedule-appointment'

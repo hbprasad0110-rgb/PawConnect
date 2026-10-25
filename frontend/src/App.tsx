@@ -3,6 +3,8 @@ import Navbar from './components/Navbar';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import AnimalsPage from './pages/AnimalsPage';
 import AnimalProfilePage from './pages/AnimalProfilePage';
 import ApplicationFormPage from './pages/ApplicationFormPage';
@@ -32,6 +34,8 @@ function Router() {
       case 'home': return <HomePage />;
       case 'login': return currentUser ? (currentUser.role === 'ADMIN' ? <AdminDashboard /> : <HomePage />) : <LoginPage />;
       case 'register': return currentUser ? (currentUser.role === 'ADMIN' ? <AdminDashboard /> : <HomePage />) : <RegisterPage />;
+      case 'forgot-password': return currentUser ? (currentUser.role === 'ADMIN' ? <AdminDashboard /> : <HomePage />) : <ForgotPasswordPage />;
+      case 'reset-password': return <ResetPasswordPage />;
       case 'animals': return <AnimalsPage />;
       case 'animal-profile': return <AnimalProfilePage />;
       case 'apply':

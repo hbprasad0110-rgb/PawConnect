@@ -53,7 +53,7 @@ export default function ApplicationFormPage() {
         </div>
         <h2 className="font-display font-800 text-2xl text-slate-900 mb-2">Application Submitted!</h2>
         <p className="text-slate-500 mb-2">Your application for <strong>{animal.name}</strong> has been received. Our team will review it within 2-3 business days.</p>
-        <p className="text-slate-400 text-sm mb-8">You'll receive an email when your application status changes.</p>
+        <p className="text-slate-400 text-sm mb-8">Track review updates and admin notes from My Applications.</p>
         <div className="flex gap-3">
           <button onClick={() => navigate('my-applications')} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-colors">
             View My Applications

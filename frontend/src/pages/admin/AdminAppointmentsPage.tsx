@@ -53,6 +53,7 @@ export default function AdminAppointmentsPage() {
                   <strong>{apt.time}</strong>
                 </div>
               </div>
+              <p className="text-xs text-slate-500 mt-1.5"><strong>Purpose:</strong> {apt.purpose}</p>
               {apt.notes && (
                 <p className="text-xs text-slate-400 mt-1.5 max-w-lg">📝 {apt.notes}</p>
               )}

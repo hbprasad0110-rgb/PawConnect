@@ -15,6 +15,14 @@ type Environment = {
   ADMIN_PASSWORD: string;
   DEMO_ADOPTER_EMAIL: string;
   DEMO_ADOPTER_PASSWORD: string;
+  EMAIL_MODE: 'disabled' | 'log' | 'smtp';
+  SMTP_HOST: string;
+  SMTP_PORT: number;
+  SMTP_SECURE: boolean;
+  SMTP_USER: string;
+  SMTP_APP_PASSWORD: string;
+  EMAIL_FROM: string;
+  SUPPORT_EMAIL: string;
 };
 
 const require = createRequire(import.meta.url);
