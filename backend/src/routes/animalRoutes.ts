@@ -33,8 +33,12 @@ router.get('/', asyncHandler(async (req, res) => {
   const query = db('animals');
   if (req.query.search) query.where((builder) => builder.where('name', 'like', `%${req.query.search}%`).orWhere('breed', 'like', `%${req.query.search}%`));
   if (req.query.type) query.where('type', req.query.type);
+  if (req.query.breed) query.where('breed', 'like', `%${req.query.breed}%`);
   if (req.query.gender) query.where('gender', req.query.gender);
-  if (req.query.status) query.where('status', req.query.status); else query.whereNot('status', 'adopted');
+  if (req.query.minAgeMonths !== undefined) query.where('age_months', '>=', z.coerce.number().int().nonnegative().parse(req.query.minAgeMonths));
+  if (req.query.maxAgeMonths !== undefined) query.where('age_months', '<=', z.coerce.number().int().nonnegative().parse(req.query.maxAgeMonths));
+  if (req.query.status) query.where('status', req.query.status);
+  else if (req.query.includeAdopted !== 'true') query.whereNot('status', 'adopted');
   const countQuery = query.clone().clearSelect().clearOrder().count({ total: '*' }).first();
   const [rows, count] = await Promise.all([query.clone().orderBy('name').limit(pageSize).offset((page - 1) * pageSize), countQuery]);
   res.json({ data: serializeMany(rows), meta: { page, pageSize, total: Number(count?.total || 0) } });

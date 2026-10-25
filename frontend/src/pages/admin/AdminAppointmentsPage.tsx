@@ -1,11 +1,22 @@
+import { useEffect, useState } from 'react';
 import { useApp } from '../../ApiAppContext';
 import { AptStatusBadge } from '../../components/StatusBadge';
+import type { Appointment } from '../../types';
 
 export default function AdminAppointmentsPage() {
-  const { appointments, animals, navigate, completeAppointment } = useApp();
+  const { appointments, animals, navigate, completeAppointment, confirmAppointment, cancelAdminAppointment, searchAdminAppointments } = useApp();
+  const [filters, setFilters] = useState({ status: '', date: '', animalId: '' });
+  const [visibleAppointments, setVisibleAppointments] = useState<Appointment[]>(appointments);
 
-  const upcoming = appointments.filter(a => a.status === 'SCHEDULED');
-  const completed = appointments.filter(a => a.status === 'COMPLETED');
+  useEffect(() => {
+    let active = true;
+    void searchAdminAppointments(filters).then((rows) => { if (active) setVisibleAppointments(rows); });
+    return () => { active = false; };
+  }, [appointments, filters, searchAdminAppointments]);
+
+  const upcoming = visibleAppointments.filter(a => a.status === 'REQUESTED' || a.status === 'CONFIRMED');
+  const completed = visibleAppointments.filter(a => a.status === 'COMPLETED');
+  const cancelled = visibleAppointments.filter(a => a.status === 'CANCELLED');
 
   const getAnimal = (id: string) => animals.find(a => a.id === id);
 
@@ -48,11 +59,22 @@ export default function AdminAppointmentsPage() {
             </div>
             {showActions && (
               <div className="flex flex-col gap-2 ml-6 flex-shrink-0">
+                {apt.status === 'REQUESTED' && (
+                  <button onClick={() => void confirmAppointment(apt.id)} className="border border-blue-200 text-blue-700 font-bold px-5 py-2 rounded-xl text-sm">Confirm</button>
+                )}
+                {apt.status === 'CONFIRMED' && (
+                  <button
+                    onClick={() => void completeAppointment(apt.id)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-colors shadow-md shadow-blue-600/20 whitespace-nowrap"
+                  >
+                    Mark Completed
+                  </button>
+                )}
                 <button
-                  onClick={() => completeAppointment(apt.id)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-colors shadow-md shadow-blue-600/20 whitespace-nowrap"
+                  onClick={() => { if (window.confirm('Cancel this appointment?')) void cancelAdminAppointment(apt.id); }}
+                  className="border border-red-200 text-red-700 font-bold px-5 py-2 rounded-xl text-sm"
                 >
-                  Mark Completed
+                  Cancel
                 </button>
               </div>
             )}
@@ -83,6 +105,21 @@ export default function AdminAppointmentsPage() {
       </div>
 
       <div className="max-w-5xl mx-auto px-6 py-8 space-y-8">
+        <div className="bg-white border border-slate-100 p-4 grid grid-cols-3 gap-4">
+          <label className="text-xs font-semibold text-slate-600">Status
+            <select value={filters.status} onChange={(event) => setFilters({ ...filters, status: event.target.value })} className="mt-1.5 w-full border border-slate-200 px-3 py-2 text-sm">
+              <option value="">All statuses</option><option value="requested">Requested</option><option value="confirmed">Confirmed</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option>
+            </select>
+          </label>
+          <label className="text-xs font-semibold text-slate-600">Date
+            <input type="date" value={filters.date} onChange={(event) => setFilters({ ...filters, date: event.target.value })} className="mt-1.5 w-full border border-slate-200 px-3 py-2 text-sm" />
+          </label>
+          <label className="text-xs font-semibold text-slate-600">Animal
+            <select value={filters.animalId} onChange={(event) => setFilters({ ...filters, animalId: event.target.value })} className="mt-1.5 w-full border border-slate-200 px-3 py-2 text-sm">
+              <option value="">All animals</option>{animals.map((animal) => <option key={animal.id} value={animal.id}>{animal.name}</option>)}
+            </select>
+          </label>
+        </div>
         {/* Upcoming */}
         <div>
           <div className="flex items-center gap-2 mb-4">
@@ -146,6 +183,12 @@ export default function AdminAppointmentsPage() {
                 );
               })}
             </div>
+          </div>
+        )}
+        {cancelled.length > 0 && (
+          <div>
+            <h2 className="font-display font-700 text-lg text-slate-600 mb-4">Cancelled Appointments</h2>
+            <div className="space-y-3 opacity-75">{cancelled.map(apt => <AptRow key={apt.id} apt={apt} showActions={false} />)}</div>
           </div>
         )}
       </div>

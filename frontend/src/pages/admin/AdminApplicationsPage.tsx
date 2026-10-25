@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useApp } from '../../ApiAppContext';
 import { AppStatusBadge, AnimalStatusBadge } from '../../components/StatusBadge';
 import type { Application, ApplicationStatus } from '../../types';
@@ -13,11 +13,21 @@ const STATUS_TABS: { label: string; value: ApplicationStatus | 'ALL' }[] = [
 ];
 
 export default function AdminApplicationsPage() {
-  const { applications, animals, approveApplication, rejectApplication, getApplicationDetails } = useApp();
+  const { applications, animals, approveApplication, rejectApplication, getApplicationDetails, searchAdminApplications } = useApp();
   const [filter, setFilter] = useState<ApplicationStatus | 'ALL'>('ALL');
   const [expanded, setExpanded] = useState<string | null>(null);
   const [confirmAction, setConfirmAction] = useState<{ id: string; action: 'approve' | 'reject' } | null>(null);
   const [details, setDetails] = useState<Record<string, Application>>({});
+  const [filteredApplications, setFilteredApplications] = useState<Application[]>(applications);
+  const [decisionNote, setDecisionNote] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    void searchAdminApplications(filter === 'ALL' ? undefined : filter.toLowerCase()).then((rows) => {
+      if (active) setFilteredApplications(rows);
+    });
+    return () => { active = false; };
+  }, [applications, filter, searchAdminApplications]);
 
   const toggleApplication = async (application: Application) => {
     if (expanded === application.id) { setExpanded(null); return; }
@@ -28,7 +38,7 @@ export default function AdminApplicationsPage() {
 
   const getAnimal = (id: string) => animals.find(a => a.id === id);
 
-  const filtered = applications.filter(a => filter === 'ALL' || a.status === filter);
+  const filtered = filteredApplications;
 
   const counts = {
     ALL: applications.length,
@@ -42,10 +52,11 @@ export default function AdminApplicationsPage() {
   const handleAction = async () => {
     if (!confirmAction) return;
     const succeeded = confirmAction.action === 'approve'
-      ? await approveApplication(confirmAction.id)
-      : await rejectApplication(confirmAction.id);
+      ? await approveApplication(confirmAction.id, decisionNote)
+      : await rejectApplication(confirmAction.id, decisionNote);
     if (!succeeded) return;
     setConfirmAction(null);
+    setDecisionNote('');
     setExpanded(null);
   };
 
@@ -193,6 +204,16 @@ export default function AdminApplicationsPage() {
                 : 'The adopter will be notified that their application was not approved.'
               }
             </p>
+            <label className="block text-left text-xs font-semibold text-slate-600 mb-5">Review note
+              <textarea
+                value={decisionNote}
+                onChange={(event) => setDecisionNote(event.target.value)}
+                rows={3}
+                maxLength={2000}
+                placeholder="Add a note the adopter can review"
+                className="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-slate-200 text-sm resize-none"
+              />
+            </label>
             <div className="flex gap-3">
               <button
                 onClick={handleAction}
@@ -201,7 +222,7 @@ export default function AdminApplicationsPage() {
                 {confirmAction.action === 'approve' ? 'Yes, Approve' : 'Yes, Reject'}
               </button>
               <button
-                onClick={() => setConfirmAction(null)}
+                onClick={() => { setConfirmAction(null); setDecisionNote(''); }}
                 className="flex-1 border border-slate-200 text-slate-600 hover:bg-slate-50 font-semibold py-3 rounded-xl transition-colors"
               >
                 Cancel

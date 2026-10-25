@@ -6,6 +6,7 @@ import { requireAuth, requireRole } from '../core/auth.ts';
 import { ApiError, asyncHandler } from '../core/errors.ts';
 import { serialize, serializeMany } from '../core/serializers.ts';
 import { validateBody } from '../core/validate.ts';
+import { nextAppointmentStatus } from '../modules/appointmentStatus/service.ts';
 
 const router = Router();
 export const adminAppointmentRouter = Router();
@@ -43,6 +44,8 @@ router.post('/', requireRole('adopter'), validateBody(createSchema), asyncHandle
     const application = await trx('adoption_applications').where({ id: req.body.applicationId, user_id: req.user!.id }).forUpdate().first();
     if (!application) throw new ApiError(404, 'NOT_FOUND', 'Application not found.');
     if (application.status !== 'approved') throw new ApiError(409, 'INVALID_STATE', 'An approved application is required to schedule an appointment.');
+    const existing = await trx('appointments').where({ application_id: application.id }).whereIn('status', ['requested', 'confirmed']).first();
+    if (existing) throw new ApiError(409, 'CONFLICT', 'This application already has an active appointment.');
     const [id] = await trx('appointments').insert({ application_id: application.id, user_id: req.user!.id, animal_id: application.animal_id, starts_at: startsAt, status: 'requested', notes: req.body.notes });
     return trx('appointments').where({ id }).first();
   });
@@ -62,13 +65,23 @@ router.patch('/:id/cancel', requireRole('adopter'), asyncHandler(async (req, res
 adminAppointmentRouter.get('/', requireAuth, requireRole('admin'), asyncHandler(async (req, res) => {
   const query = appointmentQuery();
   if (req.query.status) query.where('ap.status', req.query.status);
+  if (req.query.animalId) query.where('ap.animal_id', z.coerce.number().int().positive().parse(req.query.animalId));
+  if (req.query.date) {
+    const date = z.string().date().parse(req.query.date);
+    query.whereBetween('ap.starts_at', [`${date} 00:00:00`, `${date} 23:59:59`]);
+  }
   res.json({ data: serializeMany(await query.orderBy('ap.starts_at', 'asc')) });
 }));
 
 adminAppointmentRouter.patch('/:id/status', requireAuth, requireRole('admin'), validateBody(statusSchema), asyncHandler(async (req, res) => {
-  const updated = await db('appointments').where({ id: req.params.id }).update({ status: req.body.status, updated_at: db.fn.now() });
-  if (!updated) throw new ApiError(404, 'NOT_FOUND', 'Appointment not found.');
-  res.json({ data: serialize(await db('appointments').where({ id: req.params.id }).first()) });
+  const appointment = await db.transaction(async (trx) => {
+    const current = await trx('appointments').where({ id: req.params.id }).forUpdate().first();
+    if (!current) throw new ApiError(404, 'NOT_FOUND', 'Appointment not found.');
+    const status = nextAppointmentStatus(current.status, req.body.status);
+    await trx('appointments').where({ id: current.id }).update({ status, updated_at: trx.fn.now() });
+    return trx('appointments').where({ id: current.id }).first();
+  });
+  res.json({ data: serialize(appointment) });
 }));
 
 export default router;

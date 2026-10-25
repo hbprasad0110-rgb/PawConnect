@@ -1,8 +1,8 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import type { AdminSummary, AdoptionRecord, Animal, AnimalAdoptionRecord, AnimalStatus, AnimalStatusHistoryEntry, Appointment, Application, MedicalRecord, Page, User } from './types';
+import type { AdminSummary, AdoptionRecord, Animal, AnimalAdoptionRecord, AnimalSearchFilters, AnimalStatus, AnimalStatusHistoryEntry, Appointment, Application, MedicalRecord, Page, PageMeta, User } from './types';
 import { ageToMonths, api, ApiClientError, mapAdoption, mapApplication, mapAppointment } from './api';
 
-type ApplicationDraft = Omit<Application, 'id' | 'animalId' | 'adopterId' | 'adopterName' | 'adopterEmail' | 'status' | 'submittedDate'>;
+type ApplicationDraft = Omit<Application, 'id' | 'animalId' | 'adopterId' | 'adopterName' | 'adopterEmail' | 'status' | 'submittedDate' | 'decisionNote'>;
 
 interface AppContextType {
   currentUser: User | null;
@@ -23,12 +23,14 @@ interface AppContextType {
   logout: () => Promise<void>;
   register: (name: string, email: string, password: string, phone: string, address: string) => Promise<boolean>;
   applyForAdoption: (animalId: string, data: ApplicationDraft) => Promise<boolean>;
-  approveApplication: (applicationId: string) => Promise<boolean>;
-  rejectApplication: (applicationId: string) => Promise<boolean>;
+  approveApplication: (applicationId: string, decisionNote: string) => Promise<boolean>;
+  rejectApplication: (applicationId: string, decisionNote: string) => Promise<boolean>;
   withdrawApplication: (applicationId: string) => Promise<boolean>;
   scheduleAppointment: (applicationId: string, animalId: string, date: string, time: string, notes: string) => Promise<boolean>;
   completeAppointment: (appointmentId: string) => Promise<boolean>;
-  completeAdoption: (appointmentId: string) => Promise<boolean>;
+  confirmAppointment: (appointmentId: string) => Promise<boolean>;
+  cancelAdminAppointment: (appointmentId: string) => Promise<boolean>;
+  completeAdoption: (appointmentId: string, adoptedOn: string, notes: string) => Promise<boolean>;
   updateAnimalStatus: (animalId: string, status: AnimalStatus) => Promise<boolean>;
   addAnimal: (animal: Omit<Animal, 'id' | 'medicalRecords'>) => Promise<boolean>;
   updateAnimal: (animalId: string, animal: Omit<Animal, 'id' | 'medicalRecords' | 'status'>) => Promise<boolean>;
@@ -42,6 +44,9 @@ interface AppContextType {
   getProfile: () => Promise<User | null>;
   updateProfile: (profile: { firstName: string; lastName: string; phone: string; address: string }) => Promise<boolean>;
   getAnimalAudit: (animalId: string) => Promise<{ adoption: AnimalAdoptionRecord | null; history: AnimalStatusHistoryEntry[] }>;
+  searchAnimals: (filters: AnimalSearchFilters) => Promise<{ items: Animal[]; meta: PageMeta }>;
+  searchAdminApplications: (status?: string) => Promise<Application[]>;
+  searchAdminAppointments: (filters: { status?: string; date?: string; animalId?: string }) => Promise<Appointment[]>;
   setLoginError: (message: string) => void;
   clearAppError: () => void;
 }
@@ -60,12 +65,41 @@ const appointmentDateTime = (date: string, time: string) => {
   return new Date(`${date}T${String(hour).padStart(2, '0')}:${match[2]}:00`).toISOString();
 };
 
+const pageValues: Page[] = [
+  'home', 'animals', 'animal-profile', 'login', 'register', 'apply', 'my-applications',
+  'schedule-appointment', 'my-appointments', 'my-adoption-history', 'profile', 'admin-dashboard',
+  'admin-animals', 'admin-animal-edit', 'admin-medical-records', 'admin-applications',
+  'admin-appointments', 'admin-complete-adoption', 'admin-adoption-history',
+];
+
+const readRoute = () => {
+  const raw = window.location.hash.replace(/^#\/?/, '');
+  const [path = 'home', query = ''] = raw.split('?');
+  const page = pageValues.includes(path as Page) ? path as Page : 'home';
+  const params = new URLSearchParams(query);
+  return {
+    page,
+    animalId: params.get('animal'),
+    applicationId: params.get('application'),
+    appointmentId: params.get('appointment'),
+  };
+};
+
+const routeHash = (page: Page, animalId?: string, applicationId?: string, appointmentId?: string) => {
+  const params = new URLSearchParams();
+  if (animalId) params.set('animal', animalId);
+  if (applicationId) params.set('application', applicationId);
+  if (appointmentId) params.set('appointment', appointmentId);
+  return `#/${page}${params.size ? `?${params}` : ''}`;
+};
+
 export function AppProvider({ children }: { children: React.ReactNode }) {
+  const [initialRoute] = useState(readRoute);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [currentPage, setCurrentPage] = useState<Page>('home');
-  const [selectedAnimalId, setSelectedAnimalId] = useState<string | null>(null);
-  const [selectedApplicationId, setSelectedApplicationId] = useState<string | null>(null);
-  const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState<Page>(initialRoute.page);
+  const [selectedAnimalId, setSelectedAnimalId] = useState<string | null>(initialRoute.animalId);
+  const [selectedApplicationId, setSelectedApplicationId] = useState<string | null>(initialRoute.applicationId);
+  const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(initialRoute.appointmentId);
   const [animals, setAnimals] = useState<Animal[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -109,7 +143,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         if (!active) return;
         setCurrentUser(user);
         await refreshForUser(user);
-        setCurrentPage(user.role === 'ADMIN' ? 'admin-dashboard' : 'home');
+        if (!window.location.hash) {
+          const landingPage = user.role === 'ADMIN' ? 'admin-dashboard' : 'home';
+          setCurrentPage(landingPage);
+          window.history.replaceState(null, '', routeHash(landingPage));
+        }
       } catch (error) {
         if (!active) return;
         if (!(error instanceof ApiClientError && error.status === 401)) setAppError(errorMessage(error));
@@ -122,11 +160,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return () => { active = false; };
   }, [loadAnimals, refreshForUser]);
 
+  useEffect(() => {
+    const syncRoute = () => {
+      const route = readRoute();
+      setCurrentPage(route.page);
+      setSelectedAnimalId(route.animalId);
+      setSelectedApplicationId(route.applicationId);
+      setSelectedAppointmentId(route.appointmentId);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+    window.addEventListener('hashchange', syncRoute);
+    return () => window.removeEventListener('hashchange', syncRoute);
+  }, []);
+
   const navigate = useCallback((page: Page, animalId?: string, applicationId?: string, appointmentId?: string) => {
     setCurrentPage(page);
     if (animalId !== undefined) setSelectedAnimalId(animalId);
     if (applicationId !== undefined) setSelectedApplicationId(applicationId);
     if (appointmentId !== undefined) setSelectedAppointmentId(appointmentId);
+    window.location.hash = routeHash(page, animalId, applicationId, appointmentId);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
@@ -148,7 +200,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const user = await api.login(email, password);
       setCurrentUser(user);
       await refreshForUser(user);
-      setCurrentPage(user.role === 'ADMIN' ? 'admin-dashboard' : 'home');
+      const landingPage = user.role === 'ADMIN' ? 'admin-dashboard' : 'home';
+      setCurrentPage(landingPage);
+      window.location.hash = routeHash(landingPage);
       return user;
     } catch (error) {
       setLoginError(errorMessage(error));
@@ -167,6 +221,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setSelectedApplicationId(null);
     setSelectedAppointmentId(null);
     setCurrentPage('home');
+    window.location.hash = routeHash('home');
     await loadAnimals(false).catch((error) => setAppError(errorMessage(error)));
   }, [loadAnimals]);
 
@@ -176,6 +231,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const user = await api.register({ name, email, password, phone, address });
       setCurrentUser(user);
       await refreshForUser(user);
+      setCurrentPage('home');
+      window.location.hash = routeHash('home');
       return true;
     } catch (error) {
       setAppError(errorMessage(error));
@@ -187,22 +244,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     api.createApplication({ animalId: Number(animalId), ...data })
   ), [runAndRefresh]);
 
-  const approveApplication = useCallback((id: string) => runAndRefresh(() => api.decideApplication(id, 'approved')), [runAndRefresh]);
-  const rejectApplication = useCallback((id: string) => runAndRefresh(() => api.decideApplication(id, 'rejected')), [runAndRefresh]);
+  const approveApplication = useCallback((id: string, decisionNote: string) => runAndRefresh(() => api.decideApplication(id, 'approved', decisionNote)), [runAndRefresh]);
+  const rejectApplication = useCallback((id: string, decisionNote: string) => runAndRefresh(() => api.decideApplication(id, 'rejected', decisionNote)), [runAndRefresh]);
   const withdrawApplication = useCallback((id: string) => runAndRefresh(() => api.withdrawApplication(id)), [runAndRefresh]);
 
   const scheduleAppointment = useCallback((applicationId: string, _animalId: string, date: string, time: string, notes: string) =>
     runAndRefresh(() => api.createAppointment({ applicationId: Number(applicationId), startsAt: appointmentDateTime(date, time), notes })), [runAndRefresh]);
 
   const completeAppointment = useCallback((id: string) => runAndRefresh(() => api.setAppointmentStatus(id, 'completed')), [runAndRefresh]);
+  const confirmAppointment = useCallback((id: string) => runAndRefresh(() => api.setAppointmentStatus(id, 'confirmed')), [runAndRefresh]);
+  const cancelAdminAppointment = useCallback((id: string) => runAndRefresh(() => api.setAppointmentStatus(id, 'cancelled')), [runAndRefresh]);
 
-  const completeAdoption = useCallback((appointmentId: string) => {
+  const completeAdoption = useCallback((appointmentId: string, adoptedOn: string, notes: string) => {
     const appointment = appointments.find((item) => item.id === appointmentId);
     if (!appointment) {
       setAppError('Appointment not found.');
       return Promise.resolve(false);
     }
-    return runAndRefresh(() => api.completeAdoption(appointment.applicationId));
+    return runAndRefresh(() => api.completeAdoption(appointment.applicationId, { adoptedOn, notes }));
   }, [appointments, runAndRefresh]);
 
   const updateAnimalStatus = useCallback((animalId: string, nextStatus: AnimalStatus) => {
@@ -254,7 +313,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     description: record.description,
     administeredOn: record.date,
     vetName: record.vet || null,
-    notes: null,
+    notes: record.notes || null,
   })), [runAndRefresh]);
 
   const updateMedicalRecord = useCallback((record: MedicalRecord) => runAndRefresh(() => api.updateMedicalRecord(record.id, {
@@ -262,7 +321,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     description: record.description,
     administeredOn: record.date,
     vetName: record.vet || null,
-    notes: null,
+    notes: record.notes || null,
   })), [runAndRefresh]);
 
   const getAdminAnimal = useCallback(async (animalId: string) => {
@@ -326,16 +385,34 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const searchAnimals = useCallback(async (filters: AnimalSearchFilters) => {
+    try { return await api.searchAnimals(filters); }
+    catch (error) {
+      setAppError(errorMessage(error));
+      return { items: [], meta: { page: filters.page || 1, pageSize: filters.pageSize || 9, total: 0 } };
+    }
+  }, []);
+
+  const searchAdminApplications = useCallback(async (statusFilter?: string) => {
+    try { return (await api.adminApplications(statusFilter)).map(mapApplication); }
+    catch (error) { setAppError(errorMessage(error)); return []; }
+  }, []);
+
+  const searchAdminAppointments = useCallback(async (filters: { status?: string; date?: string; animalId?: string }) => {
+    try { return (await api.adminAppointments(filters)).map(mapAppointment); }
+    catch (error) { setAppError(errorMessage(error)); return []; }
+  }, []);
+
   return (
     <AppContext.Provider value={{
       currentUser, currentPage, selectedAnimalId, selectedApplicationId, selectedAppointmentId,
       animals, applications, appointments, adoptionHistory, adminSummary,
       loginError, appError, isLoading,
       navigate, login, logout, register, applyForAdoption, approveApplication, rejectApplication,
-      withdrawApplication, scheduleAppointment, completeAppointment, completeAdoption,
+      withdrawApplication, scheduleAppointment, completeAppointment, confirmAppointment, cancelAdminAppointment, completeAdoption,
       updateAnimalStatus, addAnimal, updateAnimal, getAdminAnimal, addMedicalRecord, updateMedicalRecord,
       getMedicalRecords, getApplicationDetails, getAppointmentAvailability, cancelAppointment,
-      getProfile, updateProfile, getAnimalAudit, setLoginError,
+      getProfile, updateProfile, getAnimalAudit, searchAnimals, searchAdminApplications, searchAdminAppointments, setLoginError,
       clearAppError: () => setAppError(''),
     }}>
       {children}

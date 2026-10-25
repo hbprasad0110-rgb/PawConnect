@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useApp } from '../ApiAppContext';
 import { AnimalStatusBadge } from '../components/StatusBadge';
-import type { AnimalStatus } from '../types';
+import type { Animal, AnimalStatus, PageMeta } from '../types';
 
 const STATUS_FILTERS: { label: string; value: AnimalStatus | 'ALL' }[] = [
   { label: 'All', value: 'ALL' },
@@ -13,20 +13,44 @@ const STATUS_FILTERS: { label: string; value: AnimalStatus | 'ALL' }[] = [
 ];
 
 export default function AnimalsPage() {
-  const { animals, navigate } = useApp();
+  const { navigate, searchAnimals } = useApp();
   const [search, setSearch] = useState('');
   const [type, setType] = useState<'ALL' | 'DOG' | 'CAT'>('ALL');
   const [status, setStatus] = useState<AnimalStatus | 'ALL'>('ALL');
   const [gender, setGender] = useState<'ALL' | 'Male' | 'Female'>('ALL');
+  const [breed, setBreed] = useState('');
+  const [ageRange, setAgeRange] = useState<'ALL' | 'YOUNG' | 'ADULT' | 'SENIOR'>('ALL');
+  const [page, setPage] = useState(1);
+  const [results, setResults] = useState<Animal[]>([]);
+  const [meta, setMeta] = useState<PageMeta>({ page: 1, pageSize: 9, total: 0 });
+  const [loading, setLoading] = useState(true);
 
-  const filtered = animals.filter(a => {
-    const q = search.toLowerCase();
-    const matchSearch = !q || a.name.toLowerCase().includes(q) || a.breed.toLowerCase().includes(q);
-    const matchType = type === 'ALL' || a.type === type;
-    const matchStatus = status === 'ALL' || a.status === status;
-    const matchGender = gender === 'ALL' || a.gender === gender;
-    return matchSearch && matchType && matchStatus && matchGender;
-  });
+  useEffect(() => {
+    const age = ageRange === 'YOUNG' ? { minAgeMonths: 0, maxAgeMonths: 11 }
+      : ageRange === 'ADULT' ? { minAgeMonths: 12, maxAgeMonths: 83 }
+        : ageRange === 'SENIOR' ? { minAgeMonths: 84 } : {};
+    let active = true;
+    setLoading(true);
+    const timer = window.setTimeout(() => {
+      void searchAnimals({
+        search: search || undefined, breed: breed || undefined,
+        type: type === 'ALL' ? undefined : type.toLowerCase() as 'dog' | 'cat',
+        gender: gender === 'ALL' ? undefined : gender.toLowerCase() as 'male' | 'female',
+        status: status === 'ALL' ? undefined : status.toLowerCase(),
+        includeAdopted: status === 'ALL', page, pageSize: 9, ...age,
+      }).then((response) => {
+        if (!active) return;
+        setResults(response.items);
+        setMeta(response.meta);
+        setLoading(false);
+      });
+    }, 200);
+    return () => { active = false; window.clearTimeout(timer); };
+  }, [ageRange, breed, gender, page, search, searchAnimals, status, type]);
+
+  const resetFilters = () => {
+    setType('ALL'); setStatus('ALL'); setGender('ALL'); setSearch(''); setBreed(''); setAgeRange('ALL'); setPage(1);
+  };
 
   return (
     <div className="fade-in min-h-screen">
@@ -50,7 +74,7 @@ export default function AnimalsPage() {
                 {(['ALL', 'DOG', 'CAT'] as const).map(t => (
                   <button
                     key={t}
-                    onClick={() => setType(t)}
+                    onClick={() => { setType(t); setPage(1); }}
                     className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${type === t ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-slate-600 hover:bg-slate-50'}`}
                   >
                     {t === 'ALL' ? '🐾 All Animals' : t === 'DOG' ? '🐕 Dogs' : '🐈 Cats'}
@@ -60,12 +84,24 @@ export default function AnimalsPage() {
             </div>
 
             <div className="mb-5">
+              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2 block">Breed</label>
+              <input value={breed} onChange={(event) => { setBreed(event.target.value); setPage(1); }} placeholder="Any breed" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm" />
+            </div>
+
+            <div className="mb-5">
+              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2 block">Age</label>
+              <select value={ageRange} onChange={(event) => { setAgeRange(event.target.value as typeof ageRange); setPage(1); }} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white">
+                <option value="ALL">Any age</option><option value="YOUNG">Under 1 year</option><option value="ADULT">1–6 years</option><option value="SENIOR">7+ years</option>
+              </select>
+            </div>
+
+            <div className="mb-5">
               <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2 block">Status</label>
               <div className="space-y-1.5">
                 {STATUS_FILTERS.map(f => (
                   <button
                     key={f.value}
-                    onClick={() => setStatus(f.value)}
+                    onClick={() => { setStatus(f.value); setPage(1); }}
                     className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${status === f.value ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-slate-600 hover:bg-slate-50'}`}
                   >
                     {f.label}
@@ -80,7 +116,7 @@ export default function AnimalsPage() {
                 {(['ALL', 'Male', 'Female'] as const).map(g => (
                   <button
                     key={g}
-                    onClick={() => setGender(g)}
+                    onClick={() => { setGender(g); setPage(1); }}
                     className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${gender === g ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-slate-600 hover:bg-slate-50'}`}
                   >
                     {g === 'ALL' ? 'All' : g}
@@ -89,9 +125,9 @@ export default function AnimalsPage() {
               </div>
             </div>
 
-            {(type !== 'ALL' || status !== 'ALL' || gender !== 'ALL' || search) && (
+            {(type !== 'ALL' || status !== 'ALL' || gender !== 'ALL' || ageRange !== 'ALL' || breed || search) && (
               <button
-                onClick={() => { setType('ALL'); setStatus('ALL'); setGender('ALL'); setSearch(''); }}
+                onClick={resetFilters}
                 className="w-full mt-4 text-sm text-slate-400 hover:text-slate-700 underline transition-colors"
               >
                 Clear all filters
@@ -110,7 +146,7 @@ export default function AnimalsPage() {
             <input
               type="text"
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={e => { setSearch(e.target.value); setPage(1); }}
               placeholder="Search by name or breed..."
               className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all shadow-sm"
             />
@@ -118,11 +154,13 @@ export default function AnimalsPage() {
 
           <div className="flex items-center justify-between mb-4">
             <p className="text-sm text-slate-500">
-              <span className="font-semibold text-slate-800">{filtered.length}</span> animals found
+              <span className="font-semibold text-slate-800">{meta.total}</span> animals found
             </p>
           </div>
 
-          {filtered.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-20 text-slate-400">Loading animals...</div>
+          ) : results.length === 0 ? (
             <div className="text-center py-20 bg-white rounded-2xl border border-slate-100">
               <div className="text-5xl mb-4">🔍</div>
               <h3 className="font-display font-700 text-xl text-slate-700 mb-2">No animals found</h3>
@@ -130,7 +168,7 @@ export default function AnimalsPage() {
             </div>
           ) : (
             <div className="grid grid-cols-3 gap-5">
-              {filtered.map(animal => (
+              {results.map(animal => (
                 <button
                   key={animal.id}
                   onClick={() => navigate('animal-profile', animal.id)}
@@ -162,6 +200,13 @@ export default function AnimalsPage() {
                   </div>
                 </button>
               ))}
+            </div>
+          )}
+          {meta.total > meta.pageSize && (
+            <div className="flex items-center justify-center gap-3 mt-8">
+              <button disabled={page <= 1} onClick={() => setPage((value) => value - 1)} className="border border-slate-200 px-4 py-2 text-sm font-semibold disabled:opacity-40">Previous</button>
+              <span className="text-sm text-slate-500">Page {meta.page} of {Math.ceil(meta.total / meta.pageSize)}</span>
+              <button disabled={page >= Math.ceil(meta.total / meta.pageSize)} onClick={() => setPage((value) => value + 1)} className="border border-slate-200 px-4 py-2 text-sm font-semibold disabled:opacity-40">Next</button>
             </div>
           )}
         </div>

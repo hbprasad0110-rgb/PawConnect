@@ -6,8 +6,8 @@ export default function MyAppointmentsPage() {
   const myApts = appointments.filter(a => a.adopterId === currentUser?.id);
   const getAnimal = (id: string) => animals.find(a => a.id === id);
 
-  const upcoming = myApts.filter(a => a.status === 'SCHEDULED');
-  const past = myApts.filter(a => a.status !== 'SCHEDULED');
+  const upcoming = myApts.filter(a => a.status === 'REQUESTED' || a.status === 'CONFIRMED');
+  const past = myApts.filter(a => a.status === 'COMPLETED' || a.status === 'CANCELLED');
 
   const AptCard = ({ apt }: { apt: typeof myApts[0] }) => {
     const animal = getAnimal(apt.animalId);
@@ -58,7 +58,7 @@ export default function MyAppointmentsPage() {
                   View Animal
                 </button>
               )}
-              {apt.status === 'SCHEDULED' && (
+              {(apt.status === 'REQUESTED' || apt.status === 'CONFIRMED') && (
                 <button
                   onClick={() => { if (window.confirm('Cancel this appointment?')) void cancelAppointment(apt.id); }}
                   className="text-sm text-red-600 hover:text-red-700 font-semibold border border-red-200 px-4 py-2 rounded-lg"
