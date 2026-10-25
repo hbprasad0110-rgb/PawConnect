@@ -11,7 +11,7 @@ type ApiEnvelope<T> = { data: T };
 type PagedApiEnvelope<T> = ApiEnvelope<T> & { meta: PageMeta };
 type Raw = Record<string, any>;
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+async function request<T>(path: string, options: RequestInit = {}, notifyUnauthorized = true): Promise<T> {
   const response = await fetch(`${appConfig.apiBase}${path}`, {
     ...options,
     credentials: 'include',
@@ -22,7 +22,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    if (response.status === 401) window.dispatchEvent(new Event('pawconnect:unauthorized'));
+    if (response.status === 401 && notifyUnauthorized) window.dispatchEvent(new Event('pawconnect:unauthorized'));
     throw new ApiClientError(
       response.status,
       payload?.error?.code || 'REQUEST_FAILED',
@@ -168,12 +168,12 @@ const put = (value: unknown): RequestInit => ({ method: 'PUT', body: JSON.string
 
 export const api = {
   health: () => request<{ status: string; service: string }>('/health'),
-  session: () => request<Raw>('/auth/me').then(mapUser),
-  login: (email: string, password: string) => request<Raw>('/auth/login', json({ email, password })).then(mapUser),
+  session: () => request<Raw>('/auth/me', {}, false).then(mapUser),
+  login: (email: string, password: string) => request<Raw>('/auth/login', json({ email, password }), false).then(mapUser),
   register: (body: { name: string; email: string; password: string; phone: string; address: string }) => request<Raw>('/auth/register', json(body)).then(mapUser),
   forgotPassword: (email: string) => request<{ message: string }>('/auth/forgot-password', json({ email })),
   resetPassword: (token: string, password: string) => request<{ message: string }>('/auth/reset-password', json({ token, password })),
-  logout: () => request('/auth/logout', { method: 'POST' }),
+  logout: () => request('/auth/logout', { method: 'POST' }, false),
   profile: () => request<Raw>('/auth/profile').then(mapUser),
   updateProfile: (body: { firstName: string; lastName: string; phone: string; address: string }) => request<Raw>('/auth/profile', put(body)).then(mapUser),
   animals: (admin = false) => request<Raw[]>(admin ? '/admin/animals' : `/animals?pageSize=${appConfig.animalPageSize}&includeAdopted=true`),

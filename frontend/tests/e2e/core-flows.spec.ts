@@ -13,6 +13,12 @@ test('visitor can browse and filter animals', async ({ page }) => {
   await expectNoPageOverflow(page);
 });
 
+test('legacy hash links redirect to the current route', async ({ page }) => {
+  await page.goto('/#/animals');
+  await expect(page).toHaveURL(/\/animals$/);
+  await expect(page.getByRole('heading', { name: 'Browse Animals' })).toBeVisible();
+});
+
 test('registration form enforces required fields', async ({ page }) => {
   await page.goto('/register');
   await page.getByRole('button', { name: 'Create Account', exact: true }).last().click();
@@ -36,6 +42,7 @@ test('adopter can sign in and access personal workflows', async ({ page }) => {
   await page.goto('/login');
   await page.getByRole('button', { name: /Adopter Login/ }).click();
   await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByText('Your session expired. Please sign in again.')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Create Account', exact: true })).toHaveCount(0);
   await page.getByRole('link', { name: 'My Applications' }).click();
   await expect(page.getByRole('heading', { name: 'My Applications' })).toBeVisible();
@@ -64,6 +71,7 @@ test('admin can sign in and access management workflows', async ({ page }) => {
   await page.goto('/login');
   await page.getByRole('button', { name: /Admin Login/ }).click();
   await expect(page).toHaveURL(/\/admin$/);
+  await expect(page.getByText('Your session expired. Please sign in again.')).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
   await page.getByRole('link', { name: 'Applications', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Applications', exact: true })).toBeVisible();

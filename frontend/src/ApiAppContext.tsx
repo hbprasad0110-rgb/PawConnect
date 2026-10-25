@@ -109,6 +109,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('pawconnect:unauthorized', handleUnauthorized);
   }, [currentUser]);
 
+  useEffect(() => {
+    if (currentUser && appError === 'Your session expired. Please sign in again.') setAppError('');
+  }, [appError, currentUser]);
+
   const loadAnimals = useCallback(async (admin = false) => {
     const rows = await api.animals(admin);
     const detailed = await Promise.all(rows.map((row) => api.animal(String(row.id))));
@@ -176,10 +180,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(async (email: string, password: string) => {
     setLoginError('');
+    setAppError('');
     try {
       const user = await api.login(email, password);
       await refreshForUser(user); // load the data first so the page they land on is not empty
       setCurrentUser(user);
+      setAppError('');
       return user;
     } catch (error) {
       setLoginError(errorMessage(error));

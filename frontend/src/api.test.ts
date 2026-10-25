@@ -36,4 +36,16 @@ describe('frontend API mappings', () => {
     await expect(api.profile()).rejects.toMatchObject({ status: 401, code: 'UNAUTHENTICATED' });
     expect(dispatchEvent).toHaveBeenCalledOnce();
   });
+
+  it('does not raise the session-expired event for the anonymous startup session check', async () => {
+    const dispatchEvent = vi.fn();
+    vi.stubGlobal('window', { dispatchEvent });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: { code: 'UNAUTHENTICATED', message: 'No session.' } }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    })));
+
+    await expect(api.session()).rejects.toMatchObject({ status: 401, code: 'UNAUTHENTICATED' });
+    expect(dispatchEvent).not.toHaveBeenCalled();
+  });
 });
