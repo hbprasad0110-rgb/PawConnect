@@ -13,16 +13,17 @@ function PawIcon({ className = 'w-5 h-5' }: { className?: string }) {
   );
 }
 
-const STATS = [
-  { value: '120+', label: 'Animals Rehomed' },
-  { value: '8', label: 'Currently Available' },
-  { value: '5', label: 'Foster Families' },
-  { value: '3', label: 'Partner Vets' },
-];
-
 export default function HomePage() {
   const { animals, navigate } = useApp();
   const featured = animals.filter(a => a.status === 'AVAILABLE').slice(0, 3);
+  const countOf = (status: string) => animals.filter(a => a.status === status).length;
+  const adoptedCount = countOf('ADOPTED');
+  const stats = [
+    { value: String(adoptedCount), label: 'Animals Adopted' },
+    { value: String(countOf('AVAILABLE')), label: 'Currently Available' },
+    { value: String(countOf('FOSTERED')), label: 'In Foster Care' },
+    { value: String(animals.length - adoptedCount), label: 'Animals in Our Care' },
+  ];
 
   return (
     <div className="fade-in">
@@ -79,8 +80,8 @@ export default function HomePage() {
                 <svg className="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
               </div>
               <div>
-                <p className="text-xs text-slate-500 font-medium">This month</p>
-                <p className="font-bold font-display text-slate-900">14 adoptions!</p>
+                <p className="text-xs text-slate-500 font-medium">Adopted so far</p>
+                <p className="font-bold font-display text-slate-900">{adoptedCount} {adoptedCount === 1 ? 'animal' : 'animals'}!</p>
               </div>
             </div>
           </div>
@@ -90,7 +91,7 @@ export default function HomePage() {
       {/* Stats */}
       <section className="bg-white border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-6 py-8 grid grid-cols-4 gap-6">
-          {STATS.map(s => (
+          {stats.map(s => (
             <div key={s.label} className="text-center">
               <p className="font-display font-900 text-3xl text-blue-600">{s.value}</p>
               <p className="text-slate-500 text-sm font-medium mt-0.5">{s.label}</p>

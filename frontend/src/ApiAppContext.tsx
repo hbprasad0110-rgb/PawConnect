@@ -1,6 +1,8 @@
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import type { AdminSummary, AdoptionRecord, Animal, AnimalAdoptionRecord, AnimalStatus, AnimalStatusHistoryEntry, Appointment, Application, MedicalRecord, Page, User } from './types';
 import { ageToMonths, api, ApiClientError, mapAdoption, mapApplication, mapAppointment } from './api';
+import { PAGE_PATHS, landingPath, pageFromPath, pathFor, paramsFromPath } from './routes';
 
 type ApplicationDraft = Omit<Application, 'id' | 'animalId' | 'adopterId' | 'adopterName' | 'adopterEmail' | 'status' | 'submittedDate'>;
 
@@ -62,10 +64,10 @@ const appointmentDateTime = (date: string, time: string) => {
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [currentPage, setCurrentPage] = useState<Page>('home');
-  const [selectedAnimalId, setSelectedAnimalId] = useState<string | null>(null);
-  const [selectedApplicationId, setSelectedApplicationId] = useState<string | null>(null);
-  const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
+  const location = useLocation();
+  const routerNavigate = useNavigate();
+  const navigateRef = useRef(routerNavigate);
+  useEffect(() => { navigateRef.current = routerNavigate; }, [routerNavigate]);
   const [animals, setAnimals] = useState<Animal[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -75,8 +77,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [appError, setAppError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
+  // The URL decides which screen is open and which animal, application or appointment it is about.
+  const currentPage = pageFromPath(location.pathname) ?? 'home';
+  const routeIds = paramsFromPath(location.pathname);
+  const selectedApplicationId = routeIds.applicationId ?? null;
+  const selectedAppointmentId = routeIds.appointmentId ?? null;
+  const selectedAnimalId = routeIds.animalId
+    ?? applications.find((application) => application.id === selectedApplicationId)?.animalId
+    ?? appointments.find((appointment) => appointment.id === selectedAppointmentId)?.animalId
+    ?? null;
+
   const loadAnimals = useCallback(async (admin = false) => {
-    const rows = await api.animals(admin);
+    // The public list leaves adopted animals out, but they still have profiles, filters and adoption records to show.
+    const rows = admin ? await api.animals(true) : (await Promise.all([api.animals(false), api.adoptedAnimals()])).flat();
     const detailed = await Promise.all(rows.map((row) => api.animal(String(row.id))));
     setAnimals(detailed);
   }, []);
@@ -109,7 +122,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         if (!active) return;
         setCurrentUser(user);
         await refreshForUser(user);
-        setCurrentPage(user.role === 'ADMIN' ? 'admin-dashboard' : 'home');
+        // An admin who opens the site at the root lands on the dashboard.
+        if (user.role === 'ADMIN' && window.location.pathname === PAGE_PATHS.home) navigateRef.current(landingPath(user), { replace: true });
       } catch (error) {
         if (!active) return;
         if (!(error instanceof ApiClientError && error.status === 401)) setAppError(errorMessage(error));
@@ -123,11 +137,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [loadAnimals, refreshForUser]);
 
   const navigate = useCallback((page: Page, animalId?: string, applicationId?: string, appointmentId?: string) => {
-    setCurrentPage(page);
-    if (animalId !== undefined) setSelectedAnimalId(animalId);
-    if (applicationId !== undefined) setSelectedApplicationId(applicationId);
-    if (appointmentId !== undefined) setSelectedAppointmentId(appointmentId);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    navigateRef.current(pathFor(page, { animalId, applicationId, appointmentId }));
   }, []);
 
   const runAndRefresh = useCallback(async (operation: () => Promise<unknown>) => {
@@ -146,9 +156,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setLoginError('');
     try {
       const user = await api.login(email, password);
+      await refreshForUser(user); // load the data first so the page they land on is not empty
       setCurrentUser(user);
-      await refreshForUser(user);
-      setCurrentPage(user.role === 'ADMIN' ? 'admin-dashboard' : 'home');
       return user;
     } catch (error) {
       setLoginError(errorMessage(error));
@@ -157,16 +166,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [refreshForUser]);
 
   const logout = useCallback(async () => {
+    // Leave the page first, so the page guard does not bounce a signed-out user to the login screen.
+    navigateRef.current(PAGE_PATHS.home, { replace: true });
     try { await api.logout(); } catch { /* The local session is cleared even if already expired. */ }
     setCurrentUser(null);
     setApplications([]);
     setAppointments([]);
     setAdoptionHistory([]);
     setAdminSummary(null);
-    setSelectedAnimalId(null);
-    setSelectedApplicationId(null);
-    setSelectedAppointmentId(null);
-    setCurrentPage('home');
     await loadAnimals(false).catch((error) => setAppError(errorMessage(error)));
   }, [loadAnimals]);
 
