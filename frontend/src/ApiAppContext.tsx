@@ -1,6 +1,8 @@
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import type { AdminSummary, AdoptionRecord, Animal, AnimalAdoptionRecord, AnimalSearchFilters, AnimalStatus, AnimalStatusHistoryEntry, Appointment, Application, MedicalRecord, Page, PageMeta, PublicSummary, User } from './types';
 import { ageToMonths, api, ApiClientError, mapAdoption, mapApplication, mapAppointment } from './api';
+import { PAGE_PATHS, landingPath, pageFromPath, pathFor, paramsFromPath } from './routes';
 
 type ApplicationDraft = Omit<Application, 'id' | 'animalId' | 'adopterId' | 'adopterName' | 'adopterEmail' | 'status' | 'submittedDate' | 'decisionNote'>;
 
@@ -66,41 +68,12 @@ const appointmentDateTime = (date: string, time: string) => {
   return new Date(`${date}T${String(hour).padStart(2, '0')}:${match[2]}:00`).toISOString();
 };
 
-const pageValues: Page[] = [
-  'home', 'animals', 'animal-profile', 'login', 'register', 'forgot-password', 'reset-password', 'apply', 'my-applications',
-  'schedule-appointment', 'my-appointments', 'my-adoption-history', 'profile', 'admin-dashboard',
-  'admin-animals', 'admin-animal-edit', 'admin-medical-records', 'admin-applications',
-  'admin-appointments', 'admin-complete-adoption', 'admin-adoption-history',
-];
-
-const readRoute = () => {
-  const raw = window.location.hash.replace(/^#\/?/, '');
-  const [path = 'home', query = ''] = raw.split('?');
-  const page = pageValues.includes(path as Page) ? path as Page : 'home';
-  const params = new URLSearchParams(query);
-  return {
-    page,
-    animalId: params.get('animal'),
-    applicationId: params.get('application'),
-    appointmentId: params.get('appointment'),
-  };
-};
-
-const routeHash = (page: Page, animalId?: string, applicationId?: string, appointmentId?: string) => {
-  const params = new URLSearchParams();
-  if (animalId) params.set('animal', animalId);
-  if (applicationId) params.set('application', applicationId);
-  if (appointmentId) params.set('appointment', appointmentId);
-  return `#/${page}${params.size ? `?${params}` : ''}`;
-};
-
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [initialRoute] = useState(readRoute);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [currentPage, setCurrentPage] = useState<Page>(initialRoute.page);
-  const [selectedAnimalId, setSelectedAnimalId] = useState<string | null>(initialRoute.animalId);
-  const [selectedApplicationId, setSelectedApplicationId] = useState<string | null>(initialRoute.applicationId);
-  const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(initialRoute.appointmentId);
+  const location = useLocation();
+  const routerNavigate = useNavigate();
+  const navigateRef = useRef(routerNavigate);
+  useEffect(() => { navigateRef.current = routerNavigate; }, [routerNavigate]);
   const [animals, setAnimals] = useState<Animal[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -111,6 +84,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [appError, setAppError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
+  // The URL decides which screen is open and which animal, application or appointment it is about.
+  const currentPage = pageFromPath(location.pathname) ?? 'home';
+  const routeIds = paramsFromPath(location.pathname);
+  const selectedApplicationId = routeIds.applicationId ?? null;
+  const selectedAppointmentId = routeIds.appointmentId ?? null;
+  const selectedAnimalId = routeIds.animalId
+    ?? applications.find((application) => application.id === selectedApplicationId)?.animalId
+    ?? appointments.find((appointment) => appointment.id === selectedAppointmentId)?.animalId
+    ?? null;
+
   useEffect(() => {
     const handleUnauthorized = () => {
       if (!currentUser) return;
@@ -120,8 +103,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setAdoptionHistory([]);
       setAdminSummary(null);
       setAppError('Your session expired. Please sign in again.');
-      setCurrentPage('login');
-      window.location.hash = routeHash('login');
+      navigateRef.current(PAGE_PATHS.login, { replace: true });
     };
     window.addEventListener('pawconnect:unauthorized', handleUnauthorized);
     return () => window.removeEventListener('pawconnect:unauthorized', handleUnauthorized);
@@ -162,11 +144,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         if (!active) return;
         setCurrentUser(user);
         await refreshForUser(user);
-        if (!window.location.hash) {
-          const landingPage = user.role === 'ADMIN' ? 'admin-dashboard' : 'home';
-          setCurrentPage(landingPage);
-          window.history.replaceState(null, '', routeHash(landingPage));
-        }
+        // An admin who opens the site at the root lands on the dashboard.
+        if (user.role === 'ADMIN' && window.location.pathname === PAGE_PATHS.home) navigateRef.current(landingPath(user), { replace: true });
       } catch (error) {
         if (!active) return;
         if (!(error instanceof ApiClientError && error.status === 401)) setAppError(errorMessage(error));
@@ -179,26 +158,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return () => { active = false; };
   }, [loadAnimals, refreshForUser]);
 
-  useEffect(() => {
-    const syncRoute = () => {
-      const route = readRoute();
-      setCurrentPage(route.page);
-      setSelectedAnimalId(route.animalId);
-      setSelectedApplicationId(route.applicationId);
-      setSelectedAppointmentId(route.appointmentId);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-    window.addEventListener('hashchange', syncRoute);
-    return () => window.removeEventListener('hashchange', syncRoute);
-  }, []);
-
   const navigate = useCallback((page: Page, animalId?: string, applicationId?: string, appointmentId?: string) => {
-    setCurrentPage(page);
-    if (animalId !== undefined) setSelectedAnimalId(animalId);
-    if (applicationId !== undefined) setSelectedApplicationId(applicationId);
-    if (appointmentId !== undefined) setSelectedAppointmentId(appointmentId);
-    window.location.hash = routeHash(page, animalId, applicationId, appointmentId);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    navigateRef.current(pathFor(page, { animalId, applicationId, appointmentId }));
   }, []);
 
   const runAndRefresh = useCallback(async (operation: () => Promise<unknown>) => {
@@ -217,11 +178,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setLoginError('');
     try {
       const user = await api.login(email, password);
+      await refreshForUser(user); // load the data first so the page they land on is not empty
       setCurrentUser(user);
-      await refreshForUser(user);
-      const landingPage = user.role === 'ADMIN' ? 'admin-dashboard' : 'home';
-      setCurrentPage(landingPage);
-      window.location.hash = routeHash(landingPage);
       return user;
     } catch (error) {
       setLoginError(errorMessage(error));
@@ -230,17 +188,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [refreshForUser]);
 
   const logout = useCallback(async () => {
+    // Leave the page first, so the page guard does not bounce a signed-out user to the login screen.
+    navigateRef.current(PAGE_PATHS.home, { replace: true });
     try { await api.logout(); } catch { /* The local session is cleared even if already expired. */ }
     setCurrentUser(null);
     setApplications([]);
     setAppointments([]);
     setAdoptionHistory([]);
     setAdminSummary(null);
-    setSelectedAnimalId(null);
-    setSelectedApplicationId(null);
-    setSelectedAppointmentId(null);
-    setCurrentPage('home');
-    window.location.hash = routeHash('home');
     await loadAnimals(false).catch((error) => setAppError(errorMessage(error)));
   }, [loadAnimals]);
 
@@ -250,8 +205,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const user = await api.register({ name, email, password, phone, address });
       setCurrentUser(user);
       await refreshForUser(user);
-      setCurrentPage('home');
-      window.location.hash = routeHash('home');
       return true;
     } catch (error) {
       setAppError(errorMessage(error));

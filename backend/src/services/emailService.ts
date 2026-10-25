@@ -97,11 +97,11 @@ export const sendWelcomeEmail = ({ email, firstName }: Recipient) => deliver({
   to: email,
   subject: 'Welcome to PawConnect',
   text: `Hello ${firstName}, your PawConnect account is ready. You can now browse animals and submit adoption applications.`,
-  html: page('Welcome to PawConnect', firstName, '<p>Your account is ready. You can now browse animals and submit adoption applications.</p>', '/#/animals', 'Browse animals'),
+  html: page('Welcome to PawConnect', firstName, '<p>Your account is ready. You can now browse animals and submit adoption applications.</p>', '/animals', 'Browse animals'),
 });
 
 export const sendPasswordResetEmail = ({ email, firstName, token }: PasswordResetNotice) => {
-  const resetPath = `/#/reset-password?token=${encodeURIComponent(token)}`;
+  const resetPath = `/reset-password?token=${encodeURIComponent(token)}`;
   return deliver({
     to: email,
     subject: 'Reset your PawConnect password',
@@ -116,13 +116,13 @@ export const sendApplicationSubmittedEmails = async ({ email, firstName, animalN
       to: email,
       subject: `Application received for ${animalName}`,
       text: `Hello ${firstName}, we received your adoption application for ${animalName}. You can track its status in My Applications.`,
-      html: page('Application received', firstName, `<p>We received your adoption application for <strong>${escapeHtml(animalName)}</strong>.</p><p>You can track its status in My Applications.</p>`, '/#/my-applications', 'View application'),
+      html: page('Application received', firstName, `<p>We received your adoption application for <strong>${escapeHtml(animalName)}</strong>.</p><p>You can track its status in My Applications.</p>`, '/my/applications', 'View application'),
     }),
     deliver({
       to: env.SUPPORT_EMAIL,
       subject: `New adoption application: ${animalName}`,
       text: `${firstName} (${email}) submitted an adoption application for ${animalName}.`,
-      html: page('New adoption application', 'PawConnect team', `<p><strong>${escapeHtml(firstName)}</strong> (${escapeHtml(email)}) submitted an application for <strong>${escapeHtml(animalName)}</strong>.</p>`, '/#/admin-applications', 'Review applications'),
+      html: page('New adoption application', 'PawConnect team', `<p><strong>${escapeHtml(firstName)}</strong> (${escapeHtml(email)}) submitted an application for <strong>${escapeHtml(animalName)}</strong>.</p>`, '/admin/applications', 'Review applications'),
     }),
   ]);
 };
@@ -134,7 +134,7 @@ export const sendApplicationStatusEmail = ({ email, firstName, animalName, statu
     to: email,
     subject: `Application ${label}: ${animalName}`,
     text: `Hello ${firstName}, your adoption application for ${animalName} was ${label}.${decisionNote ? ` Note: ${decisionNote}` : ''}`,
-    html: page('Application update', firstName, `<p>Your adoption application for <strong>${escapeHtml(animalName)}</strong> was <strong>${label}</strong>.</p>${note}`, '/#/my-applications', 'View application'),
+    html: page('Application update', firstName, `<p>Your adoption application for <strong>${escapeHtml(animalName)}</strong> was <strong>${label}</strong>.</p>${note}`, '/my/applications', 'View application'),
   });
 };
 
@@ -144,7 +144,7 @@ export const sendAppointmentStatusEmail = ({ email, firstName, animalName, start
     to: email,
     subject: `Appointment ${status}: ${animalName}`,
     text: `Hello ${firstName}, your appointment for ${animalName} on ${when} is ${status}.`,
-    html: page('Appointment update', firstName, `<p>Your appointment for <strong>${escapeHtml(animalName)}</strong> on <strong>${escapeHtml(when)}</strong> is <strong>${status}</strong>.</p>`, '/#/my-appointments', 'View appointments'),
+    html: page('Appointment update', firstName, `<p>Your appointment for <strong>${escapeHtml(animalName)}</strong> on <strong>${escapeHtml(when)}</strong> is <strong>${status}</strong>.</p>`, '/my/appointments', 'View appointments'),
   });
 };
 
@@ -152,7 +152,7 @@ export const sendAdoptionCompletedEmail = ({ email, firstName, animalName }: App
   to: email,
   subject: `Adoption completed: ${animalName}`,
   text: `Hello ${firstName}, the adoption of ${animalName} is complete. Thank you for choosing adoption.`,
-  html: page('Adoption completed', firstName, `<p>The adoption of <strong>${escapeHtml(animalName)}</strong> is complete. Thank you for choosing adoption.</p>`, '/#/my-adoption-history', 'View adoption history'),
+  html: page('Adoption completed', firstName, `<p>The adoption of <strong>${escapeHtml(animalName)}</strong> is complete. Thank you for choosing adoption.</p>`, '/my/adoption-history', 'View adoption history'),
 });
 
 export const verifyEmailTransport = async () => {

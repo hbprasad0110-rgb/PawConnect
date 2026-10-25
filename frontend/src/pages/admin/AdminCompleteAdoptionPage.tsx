@@ -26,7 +26,7 @@ export default function AdminCompleteAdoptionPage() {
     </div>
   );
 
-  if (animal.status === 'ADOPTED') return (
+  if (animal.status === 'ADOPTED' && !confirmed) return (
     <div className="fade-in min-h-screen bg-slate-50 flex items-center justify-center px-6">
       <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-12 text-center max-w-md">
         <div className="text-6xl mb-4">🎉</div>

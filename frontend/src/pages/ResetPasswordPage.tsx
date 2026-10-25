@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useApp } from '../ApiAppContext';
 import { api, ApiClientError } from '../api';
 
-const readToken = () => new URLSearchParams(window.location.hash.split('?')[1] || '').get('token') || '';
+const readToken = () => new URLSearchParams(window.location.search).get('token') || '';
 
 export default function ResetPasswordPage() {
   const { logout, navigate } = useApp();

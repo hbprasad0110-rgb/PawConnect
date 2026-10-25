@@ -178,6 +178,7 @@ export const api = {
   updateProfile: (body: { firstName: string; lastName: string; phone: string; address: string }) => request<Raw>('/auth/profile', put(body)).then(mapUser),
   animals: (admin = false) => request<Raw[]>(admin ? '/admin/animals' : `/animals?pageSize=${appConfig.animalPageSize}&includeAdopted=true`),
   searchAnimals: (filters: AnimalSearchFilters) => requestPage<Raw[]>(`/animals?${queryString({ pageSize: appConfig.animalPageSize, ...filters })}`).then(({ data, meta }) => ({ items: data.map(mapAnimal), meta })),
+  adoptedAnimals: () => request<Raw[]>(`/animals?status=adopted&pageSize=${appConfig.animalPageSize}`),
   animal: (id: string) => request<Raw>(`/animals/${id}`).then(mapAnimal),
   publicSummary: () => request<PublicSummary>('/animals/stats/summary'),
   adminAnimal: (id: string) => request<Raw>(`/admin/animals/${id}`).then(mapAnimal),

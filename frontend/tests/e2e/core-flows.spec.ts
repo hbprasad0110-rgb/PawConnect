@@ -5,7 +5,7 @@ const expectNoPageOverflow = async (page: import('@playwright/test').Page) => {
 };
 
 test('visitor can browse and filter animals', async ({ page }) => {
-  await page.goto('/#/animals');
+  await page.goto('/animals');
   await expect(page.getByRole('heading', { name: 'Browse Animals' })).toBeVisible();
   await page.getByPlaceholder('Search by name or breed...').fill('Daisy');
   await expect(page.getByRole('heading', { name: 'Daisy' })).toBeVisible();
@@ -14,7 +14,7 @@ test('visitor can browse and filter animals', async ({ page }) => {
 });
 
 test('registration form enforces required fields', async ({ page }) => {
-  await page.goto('/#/register');
+  await page.goto('/register');
   await page.getByRole('button', { name: 'Create Account', exact: true }).last().click();
   await expect(page.getByText('Full name is required.')).toBeVisible();
   await expect(page.getByText('Email is required.')).toBeVisible();
@@ -33,26 +33,26 @@ test('registration form enforces required fields', async ({ page }) => {
 });
 
 test('adopter can sign in and access personal workflows', async ({ page }) => {
-  await page.goto('/#/login');
+  await page.goto('/login');
   await page.getByRole('button', { name: /Adopter Login/ }).click();
-  await expect(page).toHaveURL(/#\/home$/);
+  await expect(page).toHaveURL(/\/$/);
   await expect(page.getByRole('button', { name: 'Create Account', exact: true })).toHaveCount(0);
-  await page.getByRole('button', { name: 'My Applications' }).click();
+  await page.getByRole('link', { name: 'My Applications' }).click();
   await expect(page.getByRole('heading', { name: 'My Applications' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Daisy' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Profile' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Profile' })).toBeVisible();
   await expectNoPageOverflow(page);
 });
 
 test('visitor can request and open a password reset', async ({ page }) => {
-  await page.goto('/#/login');
+  await page.goto('/login');
   await page.getByRole('button', { name: 'Forgot password?' }).click();
   await expect(page.getByRole('heading', { name: 'Forgot your password?' })).toBeVisible();
   await page.getByLabel('Email Address').fill('unknown-browser-test@pawconnect.test');
   await page.getByRole('button', { name: 'Send reset link' }).click();
   await expect(page.getByText('If an account exists for that email, a password reset link has been sent.')).toBeVisible();
 
-  await page.goto('/#/reset-password?token=invalid-password-reset-token-value-1234567890');
+  await page.goto('/reset-password?token=invalid-password-reset-token-value-1234567890');
   await page.getByLabel('New Password').fill('BrowserPassword123!');
   await page.getByLabel('Confirm Password').fill('BrowserPassword123!');
   await page.getByRole('button', { name: 'Reset password' }).click();
@@ -61,11 +61,11 @@ test('visitor can request and open a password reset', async ({ page }) => {
 });
 
 test('admin can sign in and access management workflows', async ({ page }) => {
-  await page.goto('/#/login');
+  await page.goto('/login');
   await page.getByRole('button', { name: /Admin Login/ }).click();
-  await expect(page).toHaveURL(/#\/admin-dashboard$/);
+  await expect(page).toHaveURL(/\/admin$/);
   await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
-  await page.getByRole('button', { name: 'Applications', exact: true }).click();
+  await page.getByRole('link', { name: 'Applications', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Applications', exact: true })).toBeVisible();
   await expectNoPageOverflow(page);
 });

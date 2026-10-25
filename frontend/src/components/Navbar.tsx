@@ -1,4 +1,7 @@
+import { Link, useLocation } from 'react-router-dom';
 import { useApp } from '../ApiAppContext';
+import { PAGE_PATHS } from '../routes';
+import type { Page } from '../types';
 
 function PawIcon({ className = 'w-7 h-7' }: { className?: string }) {
   return (
@@ -13,51 +16,52 @@ function PawIcon({ className = 'w-7 h-7' }: { className?: string }) {
 }
 
 export default function Navbar() {
-  const { currentUser, navigate, logout } = useApp();
+  const { currentUser, logout } = useApp();
+  const { pathname } = useLocation();
 
-  const navLink = (label: string, page: Parameters<typeof navigate>[0]) => (
-    <button
+  // The link for the screen you are on (or one of its detail screens) is highlighted.
+  const isActive = (page: Page) => {
+    const path = PAGE_PATHS[page];
+    if (page === 'home' || page === 'admin-dashboard') return pathname === path;
+    return pathname === path || pathname.startsWith(`${path}/`);
+  };
+
+  const navLink = (label: string, page: Page) => (
+    <Link
       key={label}
-      onClick={() => navigate(page)}
-      className="text-slate-600 hover:text-blue-600 font-medium text-sm transition-colors duration-150 px-1 whitespace-nowrap"
+      to={PAGE_PATHS[page]}
+      aria-current={isActive(page) ? 'page' : undefined}
+      className={`${isActive(page) ? 'text-blue-600' : 'text-slate-600'} hover:text-blue-600 font-medium text-sm transition-colors duration-150 px-1 whitespace-nowrap`}
     >
       {label}
-    </button>
+    </Link>
   );
 
   return (
     <nav className="bg-white border-b border-slate-100 sticky top-0 z-50 shadow-sm">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 min-h-16 py-3 flex flex-wrap items-center justify-between gap-3">
         {/* Logo */}
-        <button
-          onClick={() => navigate('home')}
-          className="flex items-center gap-2 group"
-        >
+        <Link to={PAGE_PATHS.home} className="flex items-center gap-2 group">
           <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center text-white group-hover:bg-blue-700 transition-colors">
             <PawIcon className="w-5 h-5" />
           </div>
           <span className="font-display font-900 text-xl text-slate-900">
             Paw<span className="text-blue-600">Connect</span>
           </span>
-        </button>
+        </Link>
 
         {/* Nav Links */}
         <div className="w-full md:w-auto order-3 md:order-none flex items-center gap-5 overflow-x-auto scrollbar-hide pb-1 md:pb-0">
           {!currentUser && (
             <>
               {navLink('Browse Animals', 'animals')}
-              <button
-                onClick={() => navigate('login')}
-                className="text-slate-600 hover:text-blue-600 font-medium text-sm transition-colors duration-150 px-1"
-              >
-                Sign In
-              </button>
-              <button
-                onClick={() => navigate('register')}
+              {navLink('Sign In', 'login')}
+              <Link
+                to={PAGE_PATHS.register}
                 className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-4 py-2 rounded-lg transition-colors duration-150"
               >
                 Create Account
-              </button>
+              </Link>
             </>
           )}
 
@@ -68,9 +72,9 @@ export default function Navbar() {
               {navLink('My Appointments', 'my-appointments')}
               {navLink('Adoption History', 'my-adoption-history')}
               <div className="flex items-center gap-3 ml-2">
-                <button onClick={() => navigate('profile')} title="Profile" aria-label="Profile" className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                <Link to={PAGE_PATHS.profile} title="Profile" aria-label="Profile" className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
                   <span className="text-blue-700 font-bold text-sm">{currentUser.name[0]}</span>
-                </button>
+                </Link>
                 <button
                   onClick={logout}
                   className="text-slate-400 hover:text-slate-700 text-sm transition-colors"
