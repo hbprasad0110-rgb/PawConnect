@@ -65,6 +65,8 @@ export default function AdminAdoptionHistoryPage() {
                     <p className="text-sm text-slate-500">
                       Adopted by <strong className="text-slate-700">{record.adopterName}</strong>
                     </p>
+                    <p className="text-xs text-slate-400 mt-1">Application #{record.applicationId} · Completed by {record.completedBy || 'Administrator'}</p>
+                    {record.notes && <p className="text-xs text-slate-500 mt-1">{record.notes}</p>}
                   </div>
                   <div className="text-right flex-shrink-0">
                     <p className="text-sm font-semibold text-slate-700">{record.adoptionDate}</p>

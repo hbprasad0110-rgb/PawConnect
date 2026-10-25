@@ -14,15 +14,13 @@ function PawIcon({ className = 'w-5 h-5' }: { className?: string }) {
 }
 
 export default function HomePage() {
-  const { animals, navigate } = useApp();
+  const { animals, currentUser, publicSummary, navigate } = useApp();
   const featured = animals.filter(a => a.status === 'AVAILABLE').slice(0, 3);
-  const countOf = (status: string) => animals.filter(a => a.status === status).length;
-  const adoptedCount = countOf('ADOPTED');
   const stats = [
-    { value: String(adoptedCount), label: 'Animals Adopted' },
-    { value: String(countOf('AVAILABLE')), label: 'Currently Available' },
-    { value: String(countOf('FOSTERED')), label: 'In Foster Care' },
-    { value: String(animals.length - adoptedCount), label: 'Animals in Our Care' },
+    { value: publicSummary?.animalsRehomed ?? 0, label: 'Animals Rehomed' },
+    { value: publicSummary?.availableAnimals ?? animals.filter(a => a.status === 'AVAILABLE').length, label: 'Currently Available' },
+    { value: publicSummary?.animalsInFosterCare ?? animals.filter(a => a.status === 'FOSTERED').length, label: 'Animals in Foster Care' },
+    { value: publicSummary?.veterinaryPartners ?? 0, label: 'Veterinary Partners' },
   ];
 
   return (
@@ -35,13 +33,13 @@ export default function HomePage() {
           <div className="absolute top-1/2 left-1/2 w-24 h-24 rounded-full bg-white blur-2xl" />
         </div>
 
-        <div className="max-w-7xl mx-auto px-6 py-20 grid grid-cols-2 gap-12 items-center relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 lg:py-20 grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-12 items-center relative">
           <div>
             <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm rounded-full px-4 py-1.5 mb-6 text-sm font-semibold">
               <PawIcon className="w-4 h-4" />
               PawConnect Animal Shelter
             </div>
-            <h1 className="font-display font-900 text-6xl leading-tight mb-4">
+            <h1 className="font-display font-900 text-4xl sm:text-5xl lg:text-6xl leading-tight mb-4">
               Find Your<br />
               <span className="text-yellow-300">FurEver</span> Friend
             </h1>
@@ -56,12 +54,12 @@ export default function HomePage() {
               >
                 Browse Animals
               </button>
-              <button
+              {!currentUser && <button
                 onClick={() => navigate('register')}
                 className="bg-white/15 backdrop-blur-sm border border-white/30 text-white font-bold px-7 py-3.5 rounded-xl hover:bg-white/25 transition-all duration-200"
               >
                 Create Account
-              </button>
+              </button>}
             </div>
           </div>
 
@@ -80,8 +78,8 @@ export default function HomePage() {
                 <svg className="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
               </div>
               <div>
-                <p className="text-xs text-slate-500 font-medium">Adopted so far</p>
-                <p className="font-bold font-display text-slate-900">{adoptedCount} {adoptedCount === 1 ? 'animal' : 'animals'}!</p>
+                <p className="text-xs text-slate-500 font-medium">This month</p>
+                <p className="font-bold font-display text-slate-900">{publicSummary?.adoptionsThisMonth ?? 0} adoptions</p>
               </div>
             </div>
           </div>
@@ -90,7 +88,7 @@ export default function HomePage() {
 
       {/* Stats */}
       <section className="bg-white border-b border-slate-100">
-        <div className="max-w-7xl mx-auto px-6 py-8 grid grid-cols-4 gap-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 grid grid-cols-2 lg:grid-cols-4 gap-6">
           {stats.map(s => (
             <div key={s.label} className="text-center">
               <p className="font-display font-900 text-3xl text-blue-600">{s.value}</p>
@@ -116,7 +114,7 @@ export default function HomePage() {
           </button>
         </div>
 
-        <div className="grid grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {featured.map(animal => (
             <button
               key={animal.id}
@@ -152,7 +150,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-6">
           <h2 className="font-display font-800 text-3xl text-slate-900 text-center mb-3">How It Works</h2>
           <p className="text-slate-500 text-center mb-12 max-w-lg mx-auto">Our streamlined adoption process makes it easy to find and welcome your new companion home.</p>
-          <div className="grid grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
               { step: '01', icon: '🔍', title: 'Browse Animals', desc: 'Explore our available dogs and cats by breed, age, and personality.' },
               { step: '02', icon: '📝', title: 'Apply to Adopt', desc: 'Submit an adoption application telling us about your home and lifestyle.' },
@@ -172,7 +170,7 @@ export default function HomePage() {
 
       {/* CTA */}
       <section className="max-w-7xl mx-auto px-6 py-16">
-        <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-3xl p-12 flex items-center justify-between">
+        <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-3xl p-6 sm:p-12 flex flex-col lg:flex-row gap-6 lg:items-center justify-between">
           <div>
             <h2 className="font-display font-800 text-3xl text-white mb-2">Ready to make a difference?</h2>
             <p className="text-slate-400 text-lg">Every adoption saves a life. Start your journey today.</p>
@@ -184,12 +182,12 @@ export default function HomePage() {
             >
               Browse Animals
             </button>
-            <button
+            {!currentUser && <button
               onClick={() => navigate('register')}
               className="bg-white/10 hover:bg-white/20 text-white font-bold px-7 py-3.5 rounded-xl border border-white/20 transition-colors duration-200"
             >
               Create Account
-            </button>
+            </button>}
           </div>
         </div>
       </section>

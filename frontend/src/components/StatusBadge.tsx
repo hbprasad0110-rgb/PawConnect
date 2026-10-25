@@ -17,7 +17,8 @@ const appColors: Record<ApplicationStatus, string> = {
 };
 
 const aptColors: Record<AppointmentStatus, string> = {
-  SCHEDULED: 'bg-blue-100 text-blue-700 border border-blue-200',
+  REQUESTED: 'bg-amber-100 text-amber-700 border border-amber-200',
+  CONFIRMED: 'bg-blue-100 text-blue-700 border border-blue-200',
   COMPLETED: 'bg-emerald-100 text-emerald-700 border border-emerald-200',
   CANCELLED: 'bg-red-100 text-red-700 border border-red-200',
 };

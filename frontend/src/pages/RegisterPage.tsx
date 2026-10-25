@@ -1,6 +1,29 @@
 import { useState } from 'react';
 import { useApp } from '../ApiAppContext';
 
+export type RegistrationForm = {
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  phone: string;
+  address: string;
+};
+
+export const validateRegistration = (form: RegistrationForm) => {
+  const errors: Record<string, string> = {};
+  if (!form.name.trim()) errors.name = 'Full name is required.';
+  if (!form.email.trim()) errors.email = 'Email is required.';
+  else if (!/\S+@\S+\.\S+/.test(form.email)) errors.email = 'Enter a valid email address.';
+  if (form.password.length < 8) errors.password = 'Password must be at least 8 characters.';
+  if (form.password !== form.confirmPassword) errors.confirmPassword = 'Passwords do not match.';
+  if (!form.phone.trim()) errors.phone = 'Phone number is required.';
+  else if (form.phone.trim().length < 7) errors.phone = 'Phone number must be at least 7 characters.';
+  if (!form.address.trim()) errors.address = 'Address is required.';
+  else if (form.address.trim().length < 5) errors.address = 'Address must be at least 5 characters.';
+  return errors;
+};
+
 export default function RegisterPage() {
   const { register, navigate } = useApp();
   const [form, setForm] = useState({
@@ -14,21 +37,9 @@ export default function RegisterPage() {
     if (errors[field]) setErrors(e => ({ ...e, [field]: '' }));
   };
 
-  const validate = () => {
-    const e: Record<string, string> = {};
-    if (!form.name.trim()) e.name = 'Full name is required.';
-    if (!form.email.trim()) e.email = 'Email is required.';
-    else if (!/\S+@\S+\.\S+/.test(form.email)) e.email = 'Enter a valid email address.';
-    if (form.password.length < 8) e.password = 'Password must be at least 8 characters.';
-    if (form.password !== form.confirmPassword) e.confirmPassword = 'Passwords do not match.';
-    if (!form.phone.trim()) e.phone = 'Phone number is required.';
-    if (!form.address.trim()) e.address = 'Address is required.';
-    return e;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const errs = validate();
+    const errs = validateRegistration(form);
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
     const registered = await register(form.name, form.email, form.password, form.phone, form.address);
     if (!registered) return;
@@ -36,17 +47,22 @@ export default function RegisterPage() {
     setTimeout(() => navigate('animals'), 1500);
   };
 
-  const Field = ({ label, field, type = 'text', placeholder }: { label: string; field: string; type?: string; placeholder?: string }) => (
+  const Field = ({ label, field, type = 'text', placeholder, autoComplete, minLength }: { label: string; field: string; type?: string; placeholder?: string; autoComplete?: string; minLength?: number }) => (
     <div>
-      <label className="block text-sm font-semibold text-slate-700 mb-1.5">{label}</label>
+      <label htmlFor={`register-${field}`} className="block text-sm font-semibold text-slate-700 mb-1.5">{label}</label>
       <input
+        id={`register-${field}`}
         type={type}
         value={(form as Record<string, string>)[field]}
         onChange={e => set(field, e.target.value)}
         placeholder={placeholder}
+        autoComplete={autoComplete}
+        minLength={minLength}
+        aria-invalid={Boolean(errors[field])}
+        aria-describedby={errors[field] ? `register-${field}-error` : undefined}
         className={`w-full px-4 py-3 rounded-xl border text-sm focus:ring-2 focus:ring-blue-500/30 transition-all ${errors[field] ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-slate-50 hover:border-slate-300 focus:border-blue-400'}`}
       />
-      {errors[field] && <p className="text-red-600 text-xs mt-1">{errors[field]}</p>}
+      {errors[field] && <p id={`register-${field}-error`} className="text-red-600 text-xs mt-1">{errors[field]}</p>}
     </div>
   );
 
@@ -70,35 +86,44 @@ export default function RegisterPage() {
               <p className="text-slate-500 text-sm">Join PawConnect and start your adoption journey.</p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <Field label="Full Name" field="name" placeholder="Sarah Johnson" />
-              <Field label="Email Address" field="email" type="email" placeholder="you@example.com" />
+            <form onSubmit={handleSubmit} noValidate className="space-y-4">
+              <Field label="Full Name" field="name" placeholder="Sarah Johnson" autoComplete="name" />
+              <Field label="Email Address" field="email" type="email" placeholder="you@example.com" autoComplete="email" />
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Password</label>
+                  <label htmlFor="register-password" className="block text-sm font-semibold text-slate-700 mb-1.5">Password</label>
                   <input
+                    id="register-password"
                     type="password"
                     value={form.password}
                     onChange={e => set('password', e.target.value)}
                     placeholder="Min. 8 characters"
+                    autoComplete="new-password"
+                    minLength={8}
+                    aria-invalid={Boolean(errors.password)}
+                    aria-describedby={errors.password ? 'register-password-error' : undefined}
                     className={`w-full px-4 py-3 rounded-xl border text-sm focus:ring-2 focus:ring-blue-500/30 transition-all ${errors.password ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-slate-50 hover:border-slate-300 focus:border-blue-400'}`}
                   />
-                  {errors.password && <p className="text-red-600 text-xs mt-1">{errors.password}</p>}
+                  {errors.password && <p id="register-password-error" className="text-red-600 text-xs mt-1">{errors.password}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Confirm Password</label>
+                  <label htmlFor="register-confirm-password" className="block text-sm font-semibold text-slate-700 mb-1.5">Confirm Password</label>
                   <input
+                    id="register-confirm-password"
                     type="password"
                     value={form.confirmPassword}
                     onChange={e => set('confirmPassword', e.target.value)}
                     placeholder="Repeat password"
+                    autoComplete="new-password"
+                    aria-invalid={Boolean(errors.confirmPassword)}
+                    aria-describedby={errors.confirmPassword ? 'register-confirm-password-error' : undefined}
                     className={`w-full px-4 py-3 rounded-xl border text-sm focus:ring-2 focus:ring-blue-500/30 transition-all ${errors.confirmPassword ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-slate-50 hover:border-slate-300 focus:border-blue-400'}`}
                   />
-                  {errors.confirmPassword && <p className="text-red-600 text-xs mt-1">{errors.confirmPassword}</p>}
+                  {errors.confirmPassword && <p id="register-confirm-password-error" className="text-red-600 text-xs mt-1">{errors.confirmPassword}</p>}
                 </div>
               </div>
-              <Field label="Phone Number" field="phone" type="tel" placeholder="(555) 234-5678" />
-              <Field label="Home Address" field="address" placeholder="123 Main St, Springfield, IL 62701" />
+              <Field label="Phone Number" field="phone" type="tel" placeholder="(555) 234-5678" autoComplete="tel" minLength={7} />
+              <Field label="Home Address" field="address" placeholder="123 Main St, Springfield, IL 62701" autoComplete="street-address" minLength={5} />
 
               <div className="bg-blue-50 rounded-xl p-3 border border-blue-100">
                 <p className="text-xs text-blue-700">

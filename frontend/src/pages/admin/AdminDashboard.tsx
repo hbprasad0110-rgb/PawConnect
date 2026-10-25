@@ -6,7 +6,7 @@ export default function AdminDashboard() {
   const available = adminSummary?.availableAnimals ?? animals.filter(a => a.status === 'AVAILABLE').length;
   const pending = adminSummary?.pendingApplications ?? applications.filter(a => a.status === 'PENDING').length;
   const approved = applications.filter(a => a.status === 'APPROVED').length;
-  const scheduled = adminSummary?.upcomingAppointments ?? appointments.filter(a => a.status === 'SCHEDULED').length;
+  const scheduled = adminSummary?.upcomingAppointments ?? appointments.filter(a => a.status === 'REQUESTED' || a.status === 'CONFIRMED').length;
   const totalAdopted = adminSummary?.completedAdoptions ?? adoptionHistory.length;
 
   const StatCard = ({ label, value, color, icon, onClick }: {
@@ -156,7 +156,7 @@ export default function AdminDashboard() {
 
             <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-5 text-white">
               <p className="font-display font-700 text-base mb-1">Shelter Status</p>
-              <p className="text-blue-200 text-xs mb-3">September 2026</p>
+              <p className="text-blue-200 text-xs mb-3">{new Date().toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</p>
               <div className="space-y-1.5 text-sm">
                 <div className="flex justify-between">
                   <span className="text-blue-200">Total animals</span>

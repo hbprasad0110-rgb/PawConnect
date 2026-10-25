@@ -19,6 +19,22 @@ const schema = z.object({
   ADMIN_PASSWORD: z.string().min(8),
   DEMO_ADOPTER_EMAIL: z.string().email(),
   DEMO_ADOPTER_PASSWORD: z.string().min(8),
+  EMAIL_MODE: z.enum(['disabled', 'log', 'smtp']).default('disabled'),
+  SMTP_HOST: z.string().min(1).default('smtp.gmail.com'),
+  SMTP_PORT: z.coerce.number().int().positive().default(465),
+  SMTP_SECURE: z.enum(['true', 'false']).default('true').transform((value) => value === 'true'),
+  SMTP_USER: z.union([z.string().email(), z.literal('')]).default(''),
+  SMTP_APP_PASSWORD: z.string().default(''),
+  EMAIL_FROM: z.string().min(1).default('PawConnect Support <supportpawconnect@gmail.com>'),
+  SUPPORT_EMAIL: z.string().email().default('supportpawconnect@gmail.com'),
+}).superRefine((value, context) => {
+  if (value.EMAIL_MODE === 'smtp' && (!value.SMTP_USER || !value.SMTP_APP_PASSWORD)) {
+    context.addIssue({
+      code: 'custom',
+      path: ['SMTP_APP_PASSWORD'],
+      message: 'SMTP_USER and SMTP_APP_PASSWORD are required when EMAIL_MODE is smtp.',
+    });
+  }
 });
 
 const env = schema.parse(process.env);

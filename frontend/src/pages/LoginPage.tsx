@@ -16,7 +16,8 @@ export default function LoginPage() {
   };
 
   const quickLogin = async (preset: 'adopter' | 'admin') => {
-    const creds = appConfig.demoAccounts[preset];
+    const creds = appConfig.demoAccounts?.[preset];
+    if (!creds) return;
     setEmail(creds.email);
     setPassword(creds.password);
     await login(creds.email, creds.password);
@@ -65,7 +66,7 @@ export default function LoginPage() {
             <p className="text-slate-500 text-sm mb-6">Enter your credentials to access your account.</p>
 
             {/* Demo quick login */}
-            <div className="bg-blue-50 rounded-2xl p-4 mb-6 border border-blue-100">
+            {appConfig.demoAccounts && <div className="bg-blue-50 rounded-2xl p-4 mb-6 border border-blue-100">
               <p className="text-xs font-semibold text-blue-700 mb-3 uppercase tracking-wide">Demo Accounts</p>
               <div className="grid grid-cols-2 gap-2">
                 <button
@@ -85,13 +86,13 @@ export default function LoginPage() {
                   <p className="text-xs text-slate-500 mt-0.5">{appConfig.demoAccounts.admin.email}</p>
                 </button>
               </div>
-            </div>
+            </div>}
 
-            <div className="flex items-center gap-3 mb-6">
+            {appConfig.demoAccounts && <div className="flex items-center gap-3 mb-6">
               <div className="flex-1 h-px bg-slate-200" />
               <span className="text-xs text-slate-400 font-medium">or sign in manually</span>
               <div className="flex-1 h-px bg-slate-200" />
-            </div>
+            </div>}
 
             {/* Error state */}
             {loginError && (
@@ -116,7 +117,16 @@ export default function LoginPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Password</label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-sm font-semibold text-slate-700">Password</label>
+                  <button
+                    type="button"
+                    onClick={() => navigate('forgot-password')}
+                    className="text-sm font-semibold text-blue-600 hover:text-blue-700"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}

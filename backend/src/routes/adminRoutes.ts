@@ -6,6 +6,7 @@ import { ApiError, asyncHandler } from '../core/errors.ts';
 import { serialize, serializeMany } from '../core/serializers.ts';
 import { validateBody } from '../core/validate.ts';
 import { applyTransition } from '../modules/animalStatus/service.ts';
+import { sendAdoptionCompletedEmail } from '../services/emailService.ts';
 
 const router = Router();
 router.use(requireAuth, requireRole('admin'));
@@ -32,9 +33,16 @@ router.post('/applications/:id/complete-adoption', validateBody(z.object({ adopt
     if (existing) throw new ApiError(409, 'CONFLICT', 'This animal already has an adoption record.');
     const [id] = await trx('adoptions').insert({ application_id: application.id, user_id: application.user_id, animal_id: application.animal_id, adopted_on: req.body.adoptedOn || new Date().toISOString().slice(0, 10), notes: req.body.notes, completed_by: req.user!.id });
     await trx('adoption_applications').where({ id: application.id }).update({ status: 'completed', updated_at: trx.fn.now() });
-    await applyTransition(trx, application.animal_id, 'ADOPTION_COMPLETED', req.user!.id);
+    await applyTransition(trx, application.animal_id, 'ADOPTION_COMPLETED', req.user!.id, req.body.notes || 'Adoption completed.');
     return trx('adoptions').where({ id }).first();
   });
+  const notice = await db('adoptions as ad')
+    .join('animals as a', 'a.id', 'ad.animal_id')
+    .join('users as u', 'u.id', 'ad.user_id')
+    .select('a.name as animal_name', 'u.email as adopter_email', 'u.first_name as adopter_first_name')
+    .where('ad.id', adoption.id)
+    .first();
+  await sendAdoptionCompletedEmail({ email: notice.adopter_email, firstName: notice.adopter_first_name, animalName: notice.animal_name });
   res.status(201).json({ data: serialize(adoption) });
 }));
 

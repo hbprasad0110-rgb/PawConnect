@@ -31,7 +31,7 @@ export default function Navbar() {
       key={label}
       to={PAGE_PATHS[page]}
       aria-current={isActive(page) ? 'page' : undefined}
-      className={`${isActive(page) ? 'text-blue-600' : 'text-slate-600'} hover:text-blue-600 font-medium text-sm transition-colors duration-150 px-1`}
+      className={`${isActive(page) ? 'text-blue-600' : 'text-slate-600'} hover:text-blue-600 font-medium text-sm transition-colors duration-150 px-1 whitespace-nowrap`}
     >
       {label}
     </Link>
@@ -39,7 +39,7 @@ export default function Navbar() {
 
   return (
     <nav className="bg-white border-b border-slate-100 sticky top-0 z-50 shadow-sm">
-      <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 min-h-16 py-3 flex flex-wrap items-center justify-between gap-3">
         {/* Logo */}
         <Link to={PAGE_PATHS.home} className="flex items-center gap-2 group">
           <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center text-white group-hover:bg-blue-700 transition-colors">
@@ -51,7 +51,7 @@ export default function Navbar() {
         </Link>
 
         {/* Nav Links */}
-        <div className="flex items-center gap-6">
+        <div className="w-full md:w-auto order-3 md:order-none flex items-center gap-5 overflow-x-auto scrollbar-hide pb-1 md:pb-0">
           {!currentUser && (
             <>
               {navLink('Browse Animals', 'animals')}

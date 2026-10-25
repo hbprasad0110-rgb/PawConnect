@@ -17,7 +17,7 @@ export const serialize = <T extends Record<string, unknown>>(row: T | undefined 
   const camelCase = (key: string) => key.replace(/_([a-z])/g, (_match, letter: string) => letter.toUpperCase());
   return Object.fromEntries(
     Object.entries(row)
-      .filter(([key]) => key !== 'password_hash' && key !== 'is_active')
+      .filter(([key]) => !['password_hash', 'is_active', 'admin_guard'].includes(key))
       .map(([key, value]) => [keyMap[key] || camelCase(key), value])
   );
 };

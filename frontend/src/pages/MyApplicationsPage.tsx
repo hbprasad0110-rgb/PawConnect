@@ -146,6 +146,7 @@ export default function MyApplicationsPage() {
                       <div><p className="font-semibold text-slate-700">Employment</p><p className="text-slate-500 mt-1">{details.employmentStatus}</p></div>
                       <div><p className="font-semibold text-slate-700">Home and pets</p><p className="text-slate-500 mt-1">{details.hasYard ? 'Has a yard' : 'No yard'}; {details.hasOtherPets ? details.otherPetsDescription || 'has other pets' : 'no other pets'}</p></div>
                       <div><p className="font-semibold text-slate-700">References</p><p className="text-slate-500 mt-1">{details.references}</p></div>
+                      {details.decisionNote && <div className="col-span-2"><p className="font-semibold text-slate-700">Admin review note</p><p className="text-slate-500 mt-1">{details.decisionNote}</p></div>}
                     </div>
                   )}
                 </div>

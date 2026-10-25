@@ -7,6 +7,7 @@ export default function ScheduleAppointmentPage() {
 
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
+  const [purpose, setPurpose] = useState('Meet and greet');
   const [notes, setNotes] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
@@ -42,7 +43,7 @@ export default function ScheduleAppointmentPage() {
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
-    const created = await scheduleAppointment(selectedApplicationId, animal.id, date, time, notes);
+    const created = await scheduleAppointment(selectedApplicationId, animal.id, date, time, purpose, notes);
     if (!created) return;
     setSubmitted(true);
   };
@@ -55,8 +56,8 @@ export default function ScheduleAppointmentPage() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
         </div>
-        <h2 className="font-display font-800 text-2xl text-slate-900 mb-2">Appointment Scheduled!</h2>
-        <p className="text-slate-500 mb-1">Your meet-and-greet with <strong>{animal.name}</strong> is confirmed.</p>
+        <h2 className="font-display font-800 text-2xl text-slate-900 mb-2">Appointment Requested!</h2>
+        <p className="text-slate-500 mb-1">Your meet-and-greet request for <strong>{animal.name}</strong> was sent to the shelter for confirmation.</p>
         <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 my-4 text-sm text-blue-800">
           <p className="font-semibold">{date} at {time}</p>
           <p className="text-xs text-blue-600 mt-1">PawConnect Animal Shelter, Campus Drive</p>
@@ -136,6 +137,13 @@ export default function ScheduleAppointmentPage() {
 
               {/* Notes */}
               <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+                <h2 className="font-display font-700 text-lg text-slate-900 mb-2">Purpose</h2>
+                <input
+                  required
+                  value={purpose}
+                  onChange={e => setPurpose(e.target.value)}
+                  className="w-full px-4 py-3 mb-5 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all"
+                />
                 <h2 className="font-display font-700 text-lg text-slate-900 mb-2">Additional Notes</h2>
                 <p className="text-slate-400 text-xs mb-4">Any questions or things you'd like us to know before your visit.</p>
                 <textarea
@@ -151,7 +159,7 @@ export default function ScheduleAppointmentPage() {
                 type="submit"
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl transition-colors shadow-lg shadow-blue-600/20 text-lg"
               >
-                Confirm Appointment
+                Request Appointment
               </button>
             </form>
           </div>

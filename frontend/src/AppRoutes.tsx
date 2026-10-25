@@ -8,6 +8,8 @@ import { PAGE_PATHS, landingPath } from './routes';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import AnimalsPage from './pages/AnimalsPage';
 import AnimalProfilePage from './pages/AnimalProfilePage';
 import ApplicationFormPage from './pages/ApplicationFormPage';
@@ -44,6 +46,8 @@ const routes: RouteObject[] = [
   { path: PAGE_PATHS['animal-profile'], element: <AnimalProfilePage /> },
   { path: PAGE_PATHS.login, element: <LoginRoute /> },
   { path: PAGE_PATHS.register, element: <RegisterRoute /> },
+  { path: PAGE_PATHS['forgot-password'], element: <ForgotPasswordPage /> },
+  { path: PAGE_PATHS['reset-password'], element: <ResetPasswordPage /> },
   { path: PAGE_PATHS.apply, element: adopterOnly(<ApplicationFormPage />) },
   { path: PAGE_PATHS['my-applications'], element: adopterOnly(<MyApplicationsPage />) },
   { path: PAGE_PATHS['schedule-appointment'], element: adopterOnly(<ScheduleAppointmentPage />) },

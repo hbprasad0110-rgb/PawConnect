@@ -14,6 +14,8 @@ export const PAGE_PATHS: Record<Page, string> = {
   'animal-profile': '/animals/:animalId',
   login: '/login',
   register: '/register',
+  'forgot-password': '/forgot-password',
+  'reset-password': '/reset-password',
   apply: '/animals/:animalId/apply',
   'my-applications': '/my/applications',
   'schedule-appointment': '/my/applications/:applicationId/schedule',
@@ -60,3 +62,20 @@ export const pathFor = (page: Page, ids: RouteIds = {}): string => {
 };
 
 export const landingPath = (user: Pick<User, 'role'>) => (user.role === 'ADMIN' ? PAGE_PATHS['admin-dashboard'] : PAGE_PATHS.home);
+
+export const pathFromLegacyHash = (hash: string): string | null => {
+  const raw = hash.replace(/^#\/?/, '');
+  if (!raw) return null;
+  const [pageName, query = ''] = raw.split('?');
+  if (!(pageName in PAGE_PATHS)) return null;
+
+  const page = pageName as Page;
+  const params = new URLSearchParams(query);
+  const path = pathFor(page, {
+    animalId: params.get('animal') || undefined,
+    applicationId: params.get('application') || undefined,
+    appointmentId: params.get('appointment') || undefined,
+  });
+  const token = params.get('token');
+  return token ? `${path}?token=${encodeURIComponent(token)}` : path;
+};
