@@ -21,7 +21,7 @@ export function nextStatus(current: AnimalStatus, event: StatusEvent, hasOtherPe
   throw new ApiError(409, 'INVALID_STATE', `Cannot apply ${event} while animal status is ${current}.`);
 }
 
-export async function applyTransition(trx: Knex.Transaction, animalId: number, event: StatusEvent, actorUserId: number) {
+export async function applyTransition(trx: Knex.Transaction, animalId: number, event: StatusEvent, actorUserId: number, notes?: string) {
   const animal = await trx('animals').where({ id: animalId }).forUpdate().first();
   if (!animal) throw new ApiError(404, 'NOT_FOUND', 'Animal not found.');
   let hasOtherPending = false;
@@ -32,7 +32,7 @@ export async function applyTransition(trx: Knex.Transaction, animalId: number, e
   const toStatus = nextStatus(animal.status, event, hasOtherPending);
   if (toStatus !== animal.status) {
     await trx('animals').where({ id: animalId }).update({ status: toStatus, updated_at: trx.fn.now() });
-    await trx('animal_status_history').insert({ animal_id: animalId, from_status: animal.status, to_status: toStatus, event, actor_user_id: actorUserId });
+    await trx('animal_status_history').insert({ animal_id: animalId, from_status: animal.status, to_status: toStatus, event, actor_user_id: actorUserId, notes: notes || null });
   }
   return toStatus;
 }

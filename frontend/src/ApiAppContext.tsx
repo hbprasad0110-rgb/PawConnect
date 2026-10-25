@@ -1,8 +1,10 @@
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import type { AdminSummary, AdoptionRecord, Animal, AnimalAdoptionRecord, AnimalStatus, AnimalStatusHistoryEntry, Appointment, Application, MedicalRecord, Page, User } from './types';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import type { AdminSummary, AdoptionRecord, Animal, AnimalAdoptionRecord, AnimalSearchFilters, AnimalStatus, AnimalStatusHistoryEntry, Appointment, Application, MedicalRecord, Page, PageMeta, PublicSummary, User } from './types';
 import { ageToMonths, api, ApiClientError, mapAdoption, mapApplication, mapAppointment } from './api';
+import { PAGE_PATHS, landingPath, pageFromPath, pathFor, paramsFromPath } from './routes';
 
-type ApplicationDraft = Omit<Application, 'id' | 'animalId' | 'adopterId' | 'adopterName' | 'adopterEmail' | 'status' | 'submittedDate'>;
+type ApplicationDraft = Omit<Application, 'id' | 'animalId' | 'adopterId' | 'adopterName' | 'adopterEmail' | 'status' | 'submittedDate' | 'decisionNote'>;
 
 interface AppContextType {
   currentUser: User | null;
@@ -15,6 +17,7 @@ interface AppContextType {
   appointments: Appointment[];
   adoptionHistory: AdoptionRecord[];
   adminSummary: AdminSummary | null;
+  publicSummary: PublicSummary | null;
   loginError: string;
   appError: string;
   isLoading: boolean;
@@ -23,12 +26,14 @@ interface AppContextType {
   logout: () => Promise<void>;
   register: (name: string, email: string, password: string, phone: string, address: string) => Promise<boolean>;
   applyForAdoption: (animalId: string, data: ApplicationDraft) => Promise<boolean>;
-  approveApplication: (applicationId: string) => Promise<boolean>;
-  rejectApplication: (applicationId: string) => Promise<boolean>;
+  approveApplication: (applicationId: string, decisionNote: string) => Promise<boolean>;
+  rejectApplication: (applicationId: string, decisionNote: string) => Promise<boolean>;
   withdrawApplication: (applicationId: string) => Promise<boolean>;
-  scheduleAppointment: (applicationId: string, animalId: string, date: string, time: string, notes: string) => Promise<boolean>;
+  scheduleAppointment: (applicationId: string, animalId: string, date: string, time: string, purpose: string, notes: string) => Promise<boolean>;
   completeAppointment: (appointmentId: string) => Promise<boolean>;
-  completeAdoption: (appointmentId: string) => Promise<boolean>;
+  confirmAppointment: (appointmentId: string) => Promise<boolean>;
+  cancelAdminAppointment: (appointmentId: string) => Promise<boolean>;
+  completeAdoption: (appointmentId: string, adoptedOn: string, notes: string) => Promise<boolean>;
   updateAnimalStatus: (animalId: string, status: AnimalStatus) => Promise<boolean>;
   addAnimal: (animal: Omit<Animal, 'id' | 'medicalRecords'>) => Promise<boolean>;
   updateAnimal: (animalId: string, animal: Omit<Animal, 'id' | 'medicalRecords' | 'status'>) => Promise<boolean>;
@@ -42,6 +47,9 @@ interface AppContextType {
   getProfile: () => Promise<User | null>;
   updateProfile: (profile: { firstName: string; lastName: string; phone: string; address: string }) => Promise<boolean>;
   getAnimalAudit: (animalId: string) => Promise<{ adoption: AnimalAdoptionRecord | null; history: AnimalStatusHistoryEntry[] }>;
+  searchAnimals: (filters: AnimalSearchFilters) => Promise<{ items: Animal[]; meta: PageMeta }>;
+  searchAdminApplications: (status?: string) => Promise<Application[]>;
+  searchAdminAppointments: (filters: { status?: string; date?: string; animalId?: string }) => Promise<Appointment[]>;
   setLoginError: (message: string) => void;
   clearAppError: () => void;
 }
@@ -62,18 +70,48 @@ const appointmentDateTime = (date: string, time: string) => {
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [currentPage, setCurrentPage] = useState<Page>('home');
-  const [selectedAnimalId, setSelectedAnimalId] = useState<string | null>(null);
-  const [selectedApplicationId, setSelectedApplicationId] = useState<string | null>(null);
-  const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
+  const location = useLocation();
+  const routerNavigate = useNavigate();
+  const navigateRef = useRef(routerNavigate);
+  useEffect(() => { navigateRef.current = routerNavigate; }, [routerNavigate]);
   const [animals, setAnimals] = useState<Animal[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [adoptionHistory, setAdoptionHistory] = useState<AdoptionRecord[]>([]);
   const [adminSummary, setAdminSummary] = useState<AdminSummary | null>(null);
+  const [publicSummary, setPublicSummary] = useState<PublicSummary | null>(null);
   const [loginError, setLoginError] = useState('');
   const [appError, setAppError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+
+  // The URL decides which screen is open and which animal, application or appointment it is about.
+  const currentPage = pageFromPath(location.pathname) ?? 'home';
+  const routeIds = paramsFromPath(location.pathname);
+  const selectedApplicationId = routeIds.applicationId ?? null;
+  const selectedAppointmentId = routeIds.appointmentId ?? null;
+  const selectedAnimalId = routeIds.animalId
+    ?? applications.find((application) => application.id === selectedApplicationId)?.animalId
+    ?? appointments.find((appointment) => appointment.id === selectedAppointmentId)?.animalId
+    ?? null;
+
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      if (!currentUser) return;
+      setCurrentUser(null);
+      setApplications([]);
+      setAppointments([]);
+      setAdoptionHistory([]);
+      setAdminSummary(null);
+      setAppError('Your session expired. Please sign in again.');
+      navigateRef.current(PAGE_PATHS.login, { replace: true });
+    };
+    window.addEventListener('pawconnect:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('pawconnect:unauthorized', handleUnauthorized);
+  }, [currentUser]);
+
+  useEffect(() => {
+    if (currentUser && appError === 'Your session expired. Please sign in again.') setAppError('');
+  }, [appError, currentUser]);
 
   const loadAnimals = useCallback(async (admin = false) => {
     const rows = await api.animals(admin);
@@ -105,11 +143,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const initialize = async () => {
       try {
         await api.health();
+        setPublicSummary(await api.publicSummary());
         const user = await api.session();
         if (!active) return;
         setCurrentUser(user);
         await refreshForUser(user);
-        setCurrentPage(user.role === 'ADMIN' ? 'admin-dashboard' : 'home');
+        // An admin who opens the site at the root lands on the dashboard.
+        if (user.role === 'ADMIN' && window.location.pathname === PAGE_PATHS.home) navigateRef.current(landingPath(user), { replace: true });
       } catch (error) {
         if (!active) return;
         if (!(error instanceof ApiClientError && error.status === 401)) setAppError(errorMessage(error));
@@ -123,11 +163,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [loadAnimals, refreshForUser]);
 
   const navigate = useCallback((page: Page, animalId?: string, applicationId?: string, appointmentId?: string) => {
-    setCurrentPage(page);
-    if (animalId !== undefined) setSelectedAnimalId(animalId);
-    if (applicationId !== undefined) setSelectedApplicationId(applicationId);
-    if (appointmentId !== undefined) setSelectedAppointmentId(appointmentId);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    navigateRef.current(pathFor(page, { animalId, applicationId, appointmentId }));
   }, []);
 
   const runAndRefresh = useCallback(async (operation: () => Promise<unknown>) => {
@@ -144,11 +180,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(async (email: string, password: string) => {
     setLoginError('');
+    setAppError('');
     try {
       const user = await api.login(email, password);
+      await refreshForUser(user); // load the data first so the page they land on is not empty
       setCurrentUser(user);
-      await refreshForUser(user);
-      setCurrentPage(user.role === 'ADMIN' ? 'admin-dashboard' : 'home');
+      setAppError('');
       return user;
     } catch (error) {
       setLoginError(errorMessage(error));
@@ -157,16 +194,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [refreshForUser]);
 
   const logout = useCallback(async () => {
+    // Leave the page first, so the page guard does not bounce a signed-out user to the login screen.
+    navigateRef.current(PAGE_PATHS.home, { replace: true });
     try { await api.logout(); } catch { /* The local session is cleared even if already expired. */ }
     setCurrentUser(null);
     setApplications([]);
     setAppointments([]);
     setAdoptionHistory([]);
     setAdminSummary(null);
-    setSelectedAnimalId(null);
-    setSelectedApplicationId(null);
-    setSelectedAppointmentId(null);
-    setCurrentPage('home');
     await loadAnimals(false).catch((error) => setAppError(errorMessage(error)));
   }, [loadAnimals]);
 
@@ -187,22 +222,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     api.createApplication({ animalId: Number(animalId), ...data })
   ), [runAndRefresh]);
 
-  const approveApplication = useCallback((id: string) => runAndRefresh(() => api.decideApplication(id, 'approved')), [runAndRefresh]);
-  const rejectApplication = useCallback((id: string) => runAndRefresh(() => api.decideApplication(id, 'rejected')), [runAndRefresh]);
+  const approveApplication = useCallback((id: string, decisionNote: string) => runAndRefresh(() => api.decideApplication(id, 'approved', decisionNote)), [runAndRefresh]);
+  const rejectApplication = useCallback((id: string, decisionNote: string) => runAndRefresh(() => api.decideApplication(id, 'rejected', decisionNote)), [runAndRefresh]);
   const withdrawApplication = useCallback((id: string) => runAndRefresh(() => api.withdrawApplication(id)), [runAndRefresh]);
 
-  const scheduleAppointment = useCallback((applicationId: string, _animalId: string, date: string, time: string, notes: string) =>
-    runAndRefresh(() => api.createAppointment({ applicationId: Number(applicationId), startsAt: appointmentDateTime(date, time), notes })), [runAndRefresh]);
+  const scheduleAppointment = useCallback((applicationId: string, _animalId: string, date: string, time: string, purpose: string, notes: string) =>
+    runAndRefresh(() => api.createAppointment({ applicationId: Number(applicationId), startsAt: appointmentDateTime(date, time), purpose, notes })), [runAndRefresh]);
 
   const completeAppointment = useCallback((id: string) => runAndRefresh(() => api.setAppointmentStatus(id, 'completed')), [runAndRefresh]);
+  const confirmAppointment = useCallback((id: string) => runAndRefresh(() => api.setAppointmentStatus(id, 'confirmed')), [runAndRefresh]);
+  const cancelAdminAppointment = useCallback((id: string) => runAndRefresh(() => api.setAppointmentStatus(id, 'cancelled')), [runAndRefresh]);
 
-  const completeAdoption = useCallback((appointmentId: string) => {
+  const completeAdoption = useCallback((appointmentId: string, adoptedOn: string, notes: string) => {
     const appointment = appointments.find((item) => item.id === appointmentId);
     if (!appointment) {
       setAppError('Appointment not found.');
       return Promise.resolve(false);
     }
-    return runAndRefresh(() => api.completeAdoption(appointment.applicationId));
+    return runAndRefresh(() => api.completeAdoption(appointment.applicationId, { adoptedOn, notes }));
   }, [appointments, runAndRefresh]);
 
   const updateAnimalStatus = useCallback((animalId: string, nextStatus: AnimalStatus) => {
@@ -254,7 +291,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     description: record.description,
     administeredOn: record.date,
     vetName: record.vet || null,
-    notes: null,
+    vaccination: record.vaccination || null,
+    healthStatus: record.healthStatus || null,
+    treatment: record.treatment || null,
+    notes: record.notes || null,
   })), [runAndRefresh]);
 
   const updateMedicalRecord = useCallback((record: MedicalRecord) => runAndRefresh(() => api.updateMedicalRecord(record.id, {
@@ -262,7 +302,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     description: record.description,
     administeredOn: record.date,
     vetName: record.vet || null,
-    notes: null,
+    vaccination: record.vaccination || null,
+    healthStatus: record.healthStatus || null,
+    treatment: record.treatment || null,
+    notes: record.notes || null,
   })), [runAndRefresh]);
 
   const getAdminAnimal = useCallback(async (animalId: string) => {
@@ -326,16 +369,34 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const searchAnimals = useCallback(async (filters: AnimalSearchFilters) => {
+    try { return await api.searchAnimals(filters); }
+    catch (error) {
+      setAppError(errorMessage(error));
+      return { items: [], meta: { page: filters.page || 1, pageSize: filters.pageSize || 9, total: 0 } };
+    }
+  }, []);
+
+  const searchAdminApplications = useCallback(async (statusFilter?: string) => {
+    try { return (await api.adminApplications(statusFilter)).map(mapApplication); }
+    catch (error) { setAppError(errorMessage(error)); return []; }
+  }, []);
+
+  const searchAdminAppointments = useCallback(async (filters: { status?: string; date?: string; animalId?: string }) => {
+    try { return (await api.adminAppointments(filters)).map(mapAppointment); }
+    catch (error) { setAppError(errorMessage(error)); return []; }
+  }, []);
+
   return (
     <AppContext.Provider value={{
       currentUser, currentPage, selectedAnimalId, selectedApplicationId, selectedAppointmentId,
-      animals, applications, appointments, adoptionHistory, adminSummary,
+      animals, applications, appointments, adoptionHistory, adminSummary, publicSummary,
       loginError, appError, isLoading,
       navigate, login, logout, register, applyForAdoption, approveApplication, rejectApplication,
-      withdrawApplication, scheduleAppointment, completeAppointment, completeAdoption,
+      withdrawApplication, scheduleAppointment, completeAppointment, confirmAppointment, cancelAdminAppointment, completeAdoption,
       updateAnimalStatus, addAnimal, updateAnimal, getAdminAnimal, addMedicalRecord, updateMedicalRecord,
       getMedicalRecords, getApplicationDetails, getAppointmentAvailability, cancelAppointment,
-      getProfile, updateProfile, getAnimalAudit, setLoginError,
+      getProfile, updateProfile, getAnimalAudit, searchAnimals, searchAdminApplications, searchAdminAppointments, setLoginError,
       clearAppError: () => setAppError(''),
     }}>
       {children}

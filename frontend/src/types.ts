@@ -1,7 +1,7 @@
 export type AnimalStatus = 'AVAILABLE' | 'APPLICATION_PENDING' | 'APPROVED' | 'FOSTERED' | 'ADOPTED';
 export type ApplicationStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'WITHDRAWN' | 'COMPLETED';
 export type UserRole = 'ADOPTER' | 'ADMIN';
-export type AppointmentStatus = 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
+export type AppointmentStatus = 'REQUESTED' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
 
 export interface MedicalRecord {
   id: string;
@@ -9,6 +9,10 @@ export interface MedicalRecord {
   type: string;
   description: string;
   vet: string;
+  vaccination: string;
+  healthStatus: string;
+  treatment: string;
+  notes: string;
 }
 
 export interface Animal {
@@ -50,6 +54,7 @@ export interface Application {
   status: ApplicationStatus;
   submittedDate: string;
   reviewedDate?: string;
+  decisionNote: string;
   reason: string;
   experience: string;
   livingArrangement: string;
@@ -71,7 +76,16 @@ export interface Appointment {
   date: string;
   time: string;
   status: AppointmentStatus;
+  purpose: string;
   notes: string;
+}
+
+export interface PublicSummary {
+  animalsRehomed: number;
+  availableAnimals: number;
+  animalsInFosterCare: number;
+  veterinaryPartners: number;
+  adoptionsThisMonth: number;
 }
 
 export interface AdoptionRecord {
@@ -84,7 +98,28 @@ export interface AdoptionRecord {
   adopterId: string;
   adopterName: string;
   adoptionDate: string;
-  appointmentId: string;
+  applicationId: string;
+  completedBy: string;
+  notes: string;
+}
+
+export interface AnimalSearchFilters {
+  search?: string;
+  type?: 'dog' | 'cat';
+  breed?: string;
+  gender?: 'male' | 'female';
+  status?: string;
+  minAgeMonths?: number;
+  maxAgeMonths?: number;
+  page?: number;
+  pageSize?: number;
+  includeAdopted?: boolean;
+}
+
+export interface PageMeta {
+  page: number;
+  pageSize: number;
+  total: number;
 }
 
 export interface AdminSummary {
@@ -101,6 +136,7 @@ export interface AnimalStatusHistoryEntry {
   fromStatus: AnimalStatus | null;
   toStatus: AnimalStatus;
   actorUserId: string;
+  notes: string;
   createdAt: string;
 }
 
@@ -119,6 +155,8 @@ export type Page =
   | 'animal-profile'
   | 'login'
   | 'register'
+  | 'forgot-password'
+  | 'reset-password'
   | 'apply'
   | 'my-applications'
   | 'schedule-appointment'

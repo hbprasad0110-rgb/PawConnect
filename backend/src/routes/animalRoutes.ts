@@ -18,7 +18,11 @@ const animalSchema = z.object({
   vaccinated: z.boolean().default(false), neutered: z.boolean().default(false), microchipped: z.boolean().default(false),
   healthSummary: z.string().nullable().optional(), arrivalDate: z.string().date().nullable().optional(), intakeReason: z.string().nullable().optional()
 });
-const medicalSchema = z.object({ recordType: z.string().trim().min(1), description: z.string().trim().min(1), administeredOn: z.string().date(), vetName: z.string().nullable().optional(), notes: z.string().nullable().optional() });
+const medicalSchema = z.object({
+  recordType: z.string().trim().min(1), description: z.string().trim().min(1), administeredOn: z.string().date(),
+  vetName: z.string().nullable().optional(), vaccination: z.string().nullable().optional(),
+  healthStatus: z.string().nullable().optional(), treatment: z.string().nullable().optional(), notes: z.string().nullable().optional()
+});
 
 const animalValues = (body: z.infer<typeof animalSchema>) => ({
   name: body.name, type: body.type, breed: body.breed, age_months: body.ageMonths, gender: body.gender,
@@ -33,11 +37,33 @@ router.get('/', asyncHandler(async (req, res) => {
   const query = db('animals');
   if (req.query.search) query.where((builder) => builder.where('name', 'like', `%${req.query.search}%`).orWhere('breed', 'like', `%${req.query.search}%`));
   if (req.query.type) query.where('type', req.query.type);
+  if (req.query.breed) query.where('breed', 'like', `%${req.query.breed}%`);
   if (req.query.gender) query.where('gender', req.query.gender);
-  if (req.query.status) query.where('status', req.query.status); else query.whereNot('status', 'adopted');
+  if (req.query.minAgeMonths !== undefined) query.where('age_months', '>=', z.coerce.number().int().nonnegative().parse(req.query.minAgeMonths));
+  if (req.query.maxAgeMonths !== undefined) query.where('age_months', '<=', z.coerce.number().int().nonnegative().parse(req.query.maxAgeMonths));
+  if (req.query.status) query.where('status', req.query.status);
+  else if (req.query.includeAdopted !== 'true') query.whereNot('status', 'adopted');
   const countQuery = query.clone().clearSelect().clearOrder().count({ total: '*' }).first();
   const [rows, count] = await Promise.all([query.clone().orderBy('name').limit(pageSize).offset((page - 1) * pageSize), countQuery]);
   res.json({ data: serializeMany(rows), meta: { page, pageSize, total: Number(count?.total || 0) } });
+}));
+
+router.get('/stats/summary', asyncHandler(async (_req, res) => {
+  const monthStart = new Date();
+  monthStart.setUTCDate(1);
+  monthStart.setUTCHours(0, 0, 0, 0);
+  const [rehomed, available, fostered, partners, thisMonth] = await Promise.all([
+    db('adoptions').count({ count: '*' }).first(),
+    db('animals').where({ status: 'available' }).count({ count: '*' }).first(),
+    db('animals').where({ status: 'fostered' }).count({ count: '*' }).first(),
+    db('medical_records').whereNotNull('vet_name').countDistinct({ count: 'vet_name' }).first(),
+    db('adoptions').where('adopted_on', '>=', monthStart.toISOString().slice(0, 10)).count({ count: '*' }).first(),
+  ]);
+  res.json({ data: {
+    animalsRehomed: Number(rehomed?.count || 0), availableAnimals: Number(available?.count || 0),
+    animalsInFosterCare: Number(fostered?.count || 0), veterinaryPartners: Number(partners?.count || 0),
+    adoptionsThisMonth: Number(thisMonth?.count || 0),
+  } });
 }));
 
 router.get('/:id', asyncHandler(async (req, res) => {
@@ -80,12 +106,12 @@ adminAnimalRouter.get('/:id/medical-records', requireAuth, requireRole('admin'),
 adminAnimalRouter.post('/:id/medical-records', requireAuth, requireRole('admin'), validateBody(medicalSchema), asyncHandler(async (req, res) => {
   const animal = await db('animals').where({ id: req.params.id }).first();
   if (!animal) throw new ApiError(404, 'NOT_FOUND', 'Animal not found.');
-  const [id] = await db('medical_records').insert({ animal_id: req.params.id, record_type: req.body.recordType, description: req.body.description, administered_on: req.body.administeredOn, vet_name: req.body.vetName, notes: req.body.notes, created_by: req.user!.id });
+  const [id] = await db('medical_records').insert({ animal_id: req.params.id, record_type: req.body.recordType, description: req.body.description, administered_on: req.body.administeredOn, vet_name: req.body.vetName, vaccination: req.body.vaccination, health_status: req.body.healthStatus, treatment: req.body.treatment, notes: req.body.notes, created_by: req.user!.id });
   res.status(201).json({ data: serialize(await db('medical_records').where({ id }).first()) });
 }));
 
 adminMedicalRouter.put('/:id', requireAuth, requireRole('admin'), validateBody(medicalSchema), asyncHandler(async (req, res) => {
-  const updated = await db('medical_records').where({ id: req.params.id }).update({ record_type: req.body.recordType, description: req.body.description, administered_on: req.body.administeredOn, vet_name: req.body.vetName, notes: req.body.notes });
+  const updated = await db('medical_records').where({ id: req.params.id }).update({ record_type: req.body.recordType, description: req.body.description, administered_on: req.body.administeredOn, vet_name: req.body.vetName, vaccination: req.body.vaccination, health_status: req.body.healthStatus, treatment: req.body.treatment, notes: req.body.notes });
   if (!updated) throw new ApiError(404, 'NOT_FOUND', 'Medical record not found.');
   res.json({ data: serialize(await db('medical_records').where({ id: req.params.id }).first()) });
 }));

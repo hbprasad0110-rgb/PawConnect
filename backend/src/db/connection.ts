@@ -11,7 +11,8 @@ export const db: Knex = knex({
     port: env.DB_PORT,
     user: env.DB_USER,
     password: env.DB_PASSWORD,
-    database
+    database,
+    timezone: 'Z'
   },
   pool: { min: appConfig.database.poolMin, max: appConfig.database.poolMax }
 });

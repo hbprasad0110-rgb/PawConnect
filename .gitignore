@@ -3,8 +3,12 @@ dist/
 .env
 .env.*
 !.env.example
+production.env
 *.log
 coverage/
+test-results/
+playwright-report/
 *.tsbuildinfo
+*.md
 .vscode/
 .DS_Store

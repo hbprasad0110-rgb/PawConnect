@@ -6,6 +6,7 @@ import { ApiError, asyncHandler } from '../core/errors.ts';
 import { serialize, serializeMany } from '../core/serializers.ts';
 import { validateBody } from '../core/validate.ts';
 import { applyTransition } from '../modules/animalStatus/service.ts';
+import { sendApplicationStatusEmail, sendApplicationSubmittedEmails } from '../services/emailService.ts';
 
 const router = Router();
 export const adminApplicationRouter = Router();
@@ -35,6 +36,12 @@ router.post('/', requireRole('adopter'), validateBody(applicationSchema), asyncH
       employment_status: req.body.employmentStatus, references_text: req.body.references
     });
     return trx('adoption_applications').where({ id }).first();
+  });
+  const notice = await detailsQuery().where('aa.id', application.id).first();
+  await sendApplicationSubmittedEmails({
+    email: notice.adopter_email,
+    firstName: notice.adopter_first_name,
+    animalName: notice.animal_name,
   });
   res.status(201).json({ data: serialize(application) });
 }));
@@ -66,8 +73,16 @@ router.patch('/:id/withdraw', requireRole('adopter'), asyncHandler(async (req, r
       decided_at: trx.fn.now(),
       updated_at: trx.fn.now()
     });
-    await applyTransition(trx, application.animal_id, 'APPLICATION_WITHDRAWN', req.user!.id);
+    await applyTransition(trx, application.animal_id, 'APPLICATION_WITHDRAWN', req.user!.id, 'Application withdrawn by adopter.');
     return trx('adoption_applications').where({ id: application.id }).first();
+  });
+  const notice = await detailsQuery().where('aa.id', result.id).first();
+  await sendApplicationStatusEmail({
+    email: notice.adopter_email,
+    firstName: notice.adopter_first_name,
+    animalName: notice.animal_name,
+    status: 'withdrawn',
+    decisionNote: result.decision_note,
   });
   res.json({ data: serialize(result) });
 }));
@@ -86,6 +101,7 @@ adminApplicationRouter.get('/:id', requireAuth, requireRole('admin'), asyncHandl
 
 adminApplicationRouter.patch('/:id/decision', requireAuth, requireRole('admin'), validateBody(decisionSchema), asyncHandler(async (req, res) => {
   const result = await db.transaction(async (trx) => {
+    let automaticallyRejectedIds: number[] = [];
     const application = await trx('adoption_applications').where({ id: req.params.id }).forUpdate().first();
     if (!application) throw new ApiError(404, 'NOT_FOUND', 'Application not found.');
     if (application.status !== 'pending') throw new ApiError(409, 'INVALID_STATE', 'Only pending applications can be reviewed.');
@@ -95,14 +111,40 @@ adminApplicationRouter.patch('/:id/decision', requireAuth, requireRole('admin'),
     }
     await trx('adoption_applications').where({ id: application.id }).update({ status: req.body.decision, decision_note: req.body.decisionNote, decided_by: req.user!.id, decided_at: trx.fn.now(), updated_at: trx.fn.now() });
     if (req.body.decision === 'approved') {
+      automaticallyRejectedIds = (await trx('adoption_applications')
+        .where({ animal_id: application.animal_id, status: 'pending' })
+        .whereNot({ id: application.id })
+        .pluck('id'))
+        .map(Number);
       await trx('adoption_applications').where({ animal_id: application.animal_id, status: 'pending' }).whereNot({ id: application.id }).update({ status: 'rejected', decision_note: 'Another application was approved.', decided_by: req.user!.id, decided_at: trx.fn.now(), updated_at: trx.fn.now() });
-      await applyTransition(trx, application.animal_id, 'APPLICATION_APPROVED', req.user!.id);
+      await applyTransition(trx, application.animal_id, 'APPLICATION_APPROVED', req.user!.id, req.body.decisionNote || 'Application approved.');
     } else {
-      await applyTransition(trx, application.animal_id, 'APPLICATION_REJECTED', req.user!.id);
+      await applyTransition(trx, application.animal_id, 'APPLICATION_REJECTED', req.user!.id, req.body.decisionNote || 'Application rejected.');
     }
-    return trx('adoption_applications').where({ id: application.id }).first();
+    return {
+      application: await trx('adoption_applications').where({ id: application.id }).first(),
+      automaticallyRejectedIds,
+    };
   });
-  res.json({ data: serialize(result) });
+  const notice = await detailsQuery().where('aa.id', result.application.id).first();
+  await sendApplicationStatusEmail({
+    email: notice.adopter_email,
+    firstName: notice.adopter_first_name,
+    animalName: notice.animal_name,
+    status: result.application.status,
+    decisionNote: result.application.decision_note,
+  });
+  if (result.automaticallyRejectedIds.length) {
+    const automaticallyRejected = await detailsQuery().whereIn('aa.id', result.automaticallyRejectedIds);
+    await Promise.all(automaticallyRejected.map((rejected) => sendApplicationStatusEmail({
+      email: rejected.adopter_email,
+      firstName: rejected.adopter_first_name,
+      animalName: rejected.animal_name,
+      status: 'rejected',
+      decisionNote: rejected.decision_note,
+    })));
+  }
+  res.json({ data: serialize(result.application) });
 }));
 
 router.get('/:id', asyncHandler(async (req, res) => {

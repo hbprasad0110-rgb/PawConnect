@@ -1,10 +1,18 @@
 import { useState } from 'react';
 import { useApp } from '../../ApiAppContext';
 
+const localDate = () => {
+  const now = new Date();
+  return new Date(now.getTime() - now.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
+};
+
 export default function AdminCompleteAdoptionPage() {
   const { animals, appointments, selectedAnimalId, selectedAppointmentId, completeAdoption, navigate } = useApp();
   const [confirmed, setConfirmed] = useState(false);
   const [step, setStep] = useState(1);
+  const [adoptedOn, setAdoptedOn] = useState(localDate);
+  const [notes, setNotes] = useState('');
+  const [checklist, setChecklist] = useState(() => Array(5).fill(false) as boolean[]);
 
   const animal = animals.find(a => a.id === selectedAnimalId);
   const appointment = appointments.find(a => a.id === selectedAppointmentId);
@@ -18,7 +26,7 @@ export default function AdminCompleteAdoptionPage() {
     </div>
   );
 
-  if (animal.status === 'ADOPTED') return (
+  if (animal.status === 'ADOPTED' && !confirmed) return (
     <div className="fade-in min-h-screen bg-slate-50 flex items-center justify-center px-6">
       <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-12 text-center max-w-md">
         <div className="text-6xl mb-4">🎉</div>
@@ -32,7 +40,7 @@ export default function AdminCompleteAdoptionPage() {
   );
 
   const handleComplete = async () => {
-    const completed = await completeAdoption(appointment.id);
+    const completed = await completeAdoption(appointment.id, adoptedOn, notes);
     if (!completed) return;
     setConfirmed(true);
   };
@@ -135,10 +143,17 @@ export default function AdminCompleteAdoptionPage() {
 
             {/* Checklist */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+              <div className="grid grid-cols-2 gap-4 mb-5">
+                <label className="text-xs font-semibold text-slate-600">Adoption date
+                  <input type="date" required value={adoptedOn} onChange={(event) => setAdoptedOn(event.target.value)} className="mt-1.5 w-full border border-slate-200 px-3 py-2 text-sm" />
+                </label>
+                <label className="text-xs font-semibold text-slate-600">Adoption notes
+                  <textarea rows={2} value={notes} onChange={(event) => setNotes(event.target.value)} className="mt-1.5 w-full border border-slate-200 px-3 py-2 text-sm resize-none" />
+                </label>
+              </div>
               <p className="text-xs font-semibold text-slate-400 uppercase mb-4">Pre-Adoption Checklist</p>
               <div className="space-y-3">
                 {[
-                  'Adoption fee collected ($75)',
                   'Adoption contract signed',
                   'Microchip transfer form completed',
                   'Vaccine records provided to adopter',
@@ -146,7 +161,7 @@ export default function AdminCompleteAdoptionPage() {
                   'Follow-up care instructions reviewed',
                 ].map((item, i) => (
                   <label key={i} className="flex items-center gap-3 cursor-pointer group">
-                    <input type="checkbox" defaultChecked={i < 3} className="w-4 h-4 accent-emerald-600" />
+                    <input type="checkbox" checked={checklist[i]} onChange={(event) => setChecklist((current) => current.map((value, index) => index === i ? event.target.checked : value))} className="w-4 h-4 accent-emerald-600" />
                     <span className="text-sm text-slate-700 group-hover:text-slate-900 transition-colors">{item}</span>
                   </label>
                 ))}
@@ -156,7 +171,8 @@ export default function AdminCompleteAdoptionPage() {
             {step === 1 && (
               <button
                 onClick={() => setStep(2)}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl transition-colors shadow-lg shadow-blue-600/20 text-lg"
+                disabled={!adoptedOn || checklist.some((item) => !item)}
+                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:shadow-none text-white font-bold py-4 rounded-2xl transition-colors shadow-lg shadow-blue-600/20 text-lg"
               >
                 Continue to Confirm
               </button>
@@ -201,11 +217,7 @@ export default function AdminCompleteAdoptionPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-400">Date</span>
-                  <span className="font-semibold text-slate-800">{new Date().toISOString().split('T')[0]}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Fee</span>
-                  <span className="font-semibold text-slate-800">$75.00</span>
+                  <span className="font-semibold text-slate-800">{adoptedOn}</span>
                 </div>
               </div>
             </div>

@@ -8,7 +8,7 @@ export default function AdminMedicalRecordsPage() {
   const [showAdd, setShowAdd] = useState(false);
   const [records, setRecords] = useState<MedicalRecord[]>([]);
   const [editing, setEditing] = useState<MedicalRecord | null>(null);
-  const [newRecord, setNewRecord] = useState({ date: '', type: '', description: '', vet: '' });
+  const [newRecord, setNewRecord] = useState({ date: '', type: '', description: '', vet: '', vaccination: '', healthStatus: '', treatment: '', notes: '' });
 
   const selectedAnimal = animals.find(a => a.id === selectedAnimalId);
 
@@ -33,7 +33,7 @@ export default function AdminMedicalRecordsPage() {
     const created = await addMedicalRecord(selectedAnimalId, newRecord);
     if (!created) return;
     setRecords(await getMedicalRecords(selectedAnimalId));
-    setNewRecord({ date: '', type: '', description: '', vet: '' });
+    setNewRecord({ date: '', type: '', description: '', vet: '', vaccination: '', healthStatus: '', treatment: '', notes: '' });
     setShowAdd(false);
   };
 
@@ -58,7 +58,7 @@ export default function AdminMedicalRecordsPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-8 flex gap-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 flex flex-col lg:flex-row gap-6">
         {/* Animal list */}
         <div className="w-56 flex-shrink-0">
           <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
@@ -139,6 +139,15 @@ export default function AdminMedicalRecordsPage() {
                     <label className="block text-xs font-semibold text-slate-600 mb-1.5">Description *</label>
                     <textarea required rows={3} value={newRecord.description} onChange={e => setNewRecord(r => ({ ...r, description: e.target.value }))} className={`${inputCls} resize-none`} placeholder="Describe the procedure, findings, and any follow-up needed..." />
                   </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <label className="text-xs font-semibold text-slate-600">Vaccination<input className={`${inputCls} mt-1.5`} value={newRecord.vaccination} onChange={e => setNewRecord(r => ({ ...r, vaccination: e.target.value }))} /></label>
+                    <label className="text-xs font-semibold text-slate-600">Health Status<input className={`${inputCls} mt-1.5`} value={newRecord.healthStatus} onChange={e => setNewRecord(r => ({ ...r, healthStatus: e.target.value }))} /></label>
+                    <label className="text-xs font-semibold text-slate-600">Treatment<input className={`${inputCls} mt-1.5`} value={newRecord.treatment} onChange={e => setNewRecord(r => ({ ...r, treatment: e.target.value }))} /></label>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">Notes</label>
+                    <textarea rows={2} value={newRecord.notes} onChange={e => setNewRecord(r => ({ ...r, notes: e.target.value }))} className={`${inputCls} resize-none`} placeholder="Optional follow-up or treatment notes" />
+                  </div>
                   <div className="flex gap-3">
                     <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-2.5 rounded-xl text-sm transition-colors">Save Record</button>
                     <button type="button" onClick={() => setShowAdd(false)} className="border border-slate-200 text-slate-600 hover:bg-slate-50 font-semibold px-6 py-2.5 rounded-xl text-sm transition-colors">Cancel</button>
@@ -155,6 +164,12 @@ export default function AdminMedicalRecordsPage() {
                     <label className="text-xs font-semibold text-slate-600">Veterinarian<input required className={`${inputCls} mt-1.5`} value={editing.vet} onChange={e => setEditing({ ...editing, vet: e.target.value })} /></label>
                   </div>
                   <label className="block text-xs font-semibold text-slate-600">Description<textarea required rows={3} className={`${inputCls} mt-1.5 resize-none`} value={editing.description} onChange={e => setEditing({ ...editing, description: e.target.value })} /></label>
+                  <div className="grid grid-cols-3 gap-4">
+                    <label className="text-xs font-semibold text-slate-600">Vaccination<input className={`${inputCls} mt-1.5`} value={editing.vaccination} onChange={e => setEditing({ ...editing, vaccination: e.target.value })} /></label>
+                    <label className="text-xs font-semibold text-slate-600">Health Status<input className={`${inputCls} mt-1.5`} value={editing.healthStatus} onChange={e => setEditing({ ...editing, healthStatus: e.target.value })} /></label>
+                    <label className="text-xs font-semibold text-slate-600">Treatment<input className={`${inputCls} mt-1.5`} value={editing.treatment} onChange={e => setEditing({ ...editing, treatment: e.target.value })} /></label>
+                  </div>
+                  <label className="block text-xs font-semibold text-slate-600">Notes<textarea rows={2} className={`${inputCls} mt-1.5 resize-none`} value={editing.notes} onChange={e => setEditing({ ...editing, notes: e.target.value })} /></label>
                   <div className="flex gap-3">
                     <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-2.5 rounded-xl text-sm">Save Changes</button>
                     <button type="button" onClick={() => setEditing(null)} className="border border-slate-200 text-slate-600 px-6 py-2.5 rounded-xl text-sm font-semibold">Cancel</button>
@@ -187,6 +202,12 @@ export default function AdminMedicalRecordsPage() {
                           </div>
                         </div>
                         <p className="text-slate-500 text-sm leading-relaxed">{record.description}</p>
+                        {(record.vaccination || record.healthStatus || record.treatment) && <div className="grid grid-cols-3 gap-3 mt-3 text-xs text-slate-500">
+                          <p><strong>Vaccination:</strong> {record.vaccination || 'N/A'}</p>
+                          <p><strong>Health:</strong> {record.healthStatus || 'N/A'}</p>
+                          <p><strong>Treatment:</strong> {record.treatment || 'N/A'}</p>
+                        </div>}
+                        {record.notes && <p className="text-slate-400 text-xs mt-2"><strong>Notes:</strong> {record.notes}</p>}
                       </div>
                     ))}
                   </div>

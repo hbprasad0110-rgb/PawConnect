@@ -6,7 +6,7 @@ const required = (name: string, value: string | undefined) => {
 export const appConfig = {
   apiBase: required('VITE_API_URL', import.meta.env.VITE_API_URL),
   animalPageSize: 50,
-  demoAccounts: {
+  demoAccounts: (import.meta.env.DEV || import.meta.env.VITE_ENABLE_DEMO_LOGIN === 'true') ? {
     adopter: {
       email: required('VITE_DEMO_ADOPTER_EMAIL', import.meta.env.VITE_DEMO_ADOPTER_EMAIL),
       password: required('VITE_DEMO_ADOPTER_PASSWORD', import.meta.env.VITE_DEMO_ADOPTER_PASSWORD),
@@ -15,5 +15,5 @@ export const appConfig = {
       email: required('VITE_DEMO_ADMIN_EMAIL', import.meta.env.VITE_DEMO_ADMIN_EMAIL),
       password: required('VITE_DEMO_ADMIN_PASSWORD', import.meta.env.VITE_DEMO_ADMIN_PASSWORD),
     },
-  },
+  } : null,
 } as const;

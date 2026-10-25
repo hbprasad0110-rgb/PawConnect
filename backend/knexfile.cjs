@@ -12,7 +12,8 @@ const connection = (database) => ({
   port: env.DB_PORT,
   user: env.DB_USER,
   password: env.DB_PASSWORD,
-  database
+  database,
+  timezone: 'Z'
 });
 
 module.exports = {
@@ -23,5 +24,9 @@ module.exports = {
   test: {
     ...shared,
     connection: connection(env.DB_NAME_TEST)
+  },
+  production: {
+    ...shared,
+    connection: connection(env.DB_NAME)
   }
 };
