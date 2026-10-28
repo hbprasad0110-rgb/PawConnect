@@ -1,5 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const apiPort = process.env.PORT || '5000';
+
 export default defineConfig({
   testDir: './tests/e2e',
   timeout: 30_000,
@@ -17,7 +19,7 @@ export default defineConfig({
   webServer: [
     {
       command: 'npm run db:up --prefix .. && npm run dev --prefix ../backend',
-      url: 'http://127.0.0.1:5000/api/health',
+      url: `http://127.0.0.1:${apiPort}/api/health`,
       reuseExistingServer: true,
       timeout: 120_000,
     },

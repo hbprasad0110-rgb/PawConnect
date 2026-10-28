@@ -9,7 +9,7 @@
     "start": "node dist/src/server.js",
     "typecheck": "tsc --noEmit",
     "test": "npm run test:unit && npm run test:integration",
-    "test:unit": "node --import tsx --test tests/animalStatus.test.ts tests/appointmentStatus.test.ts tests/emailService.test.ts tests/health.test.ts",
+    "test:unit": "node --import tsx --test tests/animalStatus.test.ts tests/appointmentStatus.test.ts tests/auth.test.ts tests/emailService.test.ts tests/errors.test.ts tests/health.test.ts tests/serializers.test.ts tests/validate.test.ts",
     "test:integration": "node scripts/run-integration-tests.mjs",
     "email:test": "tsx scripts/test-email.ts",
     "db:create": "node scripts/create-database.mjs",
