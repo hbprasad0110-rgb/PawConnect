@@ -51,6 +51,24 @@ describe('PawConnect API workflow', () => {
     assert.equal(registration.status, 201);
     assert.equal(registration.body.data.role, 'adopter');
 
+    const profile = await adopter.get('/api/auth/profile');
+    assert.equal(profile.status, 200);
+    assert.equal(profile.body.data.firstName, 'Integration');
+
+    const updatedProfile = await adopter.put('/api/auth/profile').send({
+      firstName: 'Updated',
+      lastName: 'Integration User',
+      phone: '(555) 987-1234',
+      address: '200 Updated Test Lane, Arlington, TX 76010',
+    });
+    assert.equal(updatedProfile.status, 200);
+    assert.equal(updatedProfile.body.data.firstName, 'Updated');
+    assert.equal(updatedProfile.body.data.phone, '(555) 987-1234');
+
+    const activeSession = await adopter.get('/api/auth/me');
+    assert.equal(activeSession.status, 200);
+    assert.equal(activeSession.body.data.id, registration.body.data.id);
+
     const duplicateRegistration = await adopter.post('/api/auth/register').send({
       name: 'Duplicate Integration User', email: 'integration@pawconnect.test', password: 'Integration123!',
       phone: '(555) 987-6543', address: '100 Test Lane, Arlington, TX 76010',
@@ -196,6 +214,10 @@ describe('PawConnect API workflow', () => {
     assert.equal(appointment.body.data.status, 'requested');
     assert.equal(appointment.body.data.purpose, 'Family meet and greet');
 
+    const myAppointments = await adopter.get('/api/appointments/mine');
+    assert.equal(myAppointments.status, 200);
+    assert.ok(myAppointments.body.data.some((item: { id: number }) => item.id === appointment.body.data.id));
+
     const overlappingAppointment = await adopter.post('/api/appointments').send({
       applicationId: secondApplication.body.data.id,
       startsAt: startsAt.toISOString(),
@@ -233,6 +255,10 @@ describe('PawConnect API workflow', () => {
     assert.equal(adoption.status, 201);
     assert.equal(adoption.body.data.notes, 'All handoff checklist items were completed.');
 
+    const myAdoptions = await adopter.get('/api/adoptions/mine');
+    assert.equal(myAdoptions.status, 200);
+    assert.ok(myAdoptions.body.data.some((record: { applicationId: number }) => record.applicationId === application.body.data.id));
+
     const history = await admin.get('/api/admin/adoptions');
     assert.equal(history.status, 200);
     assert.ok(history.body.data.some((record: { applicationId: number }) => record.applicationId === application.body.data.id));
@@ -261,5 +287,11 @@ describe('PawConnect API workflow', () => {
     assert.equal(structuredMedical.status, 201);
     assert.equal(structuredMedical.body.data.vaccination, 'Rabies booster');
     assert.equal(structuredMedical.body.data.healthStatus, 'Healthy');
+
+    const logout = await adopter.post('/api/auth/logout');
+    assert.equal(logout.status, 200);
+    assert.equal(logout.body.data.loggedOut, true);
+    const protectedAfterLogout = await adopter.get('/api/applications/mine');
+    assert.equal(protectedAfterLogout.status, 401);
   });
 });
