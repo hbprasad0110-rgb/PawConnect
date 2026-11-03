@@ -49,3 +49,36 @@ describe('frontend API mappings', () => {
     expect(dispatchEvent).not.toHaveBeenCalled();
   });
 });
+
+describe('API request regressions', () => {
+  it('includes cookie credentials and JSON headers on login without expiring another session', async () => {
+    const dispatchEvent = vi.fn();
+    vi.stubGlobal('window', { dispatchEvent });
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: { message: 'Invalid credentials' } }), { status: 401 }));
+    vi.stubGlobal('fetch', fetchMock);
+    await expect(api.login('test@example.test', 'wrong')).rejects.toMatchObject({ status: 401 });
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('/auth/login'), expect.objectContaining({
+      credentials: 'include', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'test@example.test', password: 'wrong' }),
+    }));
+    expect(dispatchEvent).not.toHaveBeenCalled();
+  });
+  it('handles non-JSON server errors with the standard fallback', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('Service unavailable', { status: 503 })));
+    await expect(api.health()).rejects.toMatchObject({ status: 503, code: 'REQUEST_FAILED', message: 'The request could not be completed.' });
+  });
+  it('encodes search strings and preserves false and zero filter values', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: [], meta: { page: 1, pageSize: 9, total: 0 } })));
+    vi.stubGlobal('fetch', fetchMock);
+    await api.searchAnimals({ search: 'a&status=adopted', includeAdopted: false, minAgeMonths: 0 });
+    const url = new URL(fetchMock.mock.calls[0][0], 'http://localhost');
+    expect(url.searchParams.get('search')).toBe('a&status=adopted');
+    expect(url.searchParams.get('status')).toBeNull();
+    expect(url.searchParams.get('includeAdopted')).toBe('false');
+    expect(url.searchParams.get('minAgeMonths')).toBe('0');
+  });
+  it('maps missing optional fields and invalid appointment dates safely', () => {
+    expect(mapAnimal({})).toMatchObject({ id: '', name: '', medicalRecords: [], age: '0 months' });
+    expect(mapAppointment({ startsAt: 'invalid' })).toMatchObject({ date: '', time: '' });
+  });
+});
