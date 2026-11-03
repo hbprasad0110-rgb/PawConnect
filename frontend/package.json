@@ -9,7 +9,10 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test": "vitest run src",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:e2e:system": "playwright test --config=playwright.system.config.ts",
+    "test:ui": "PAWCONNECT_UI_ONLY=1 playwright test",
+    "test:e2e:install": "playwright install chromium firefox webkit"
   },
   "dependencies": {
     "react": "^19.0.0",
@@ -17,6 +20,7 @@
     "react-router-dom": "^7.18.4"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@playwright/test": "^1.64.1",
     "@tailwindcss/vite": "^4.0.0",
     "@types/node": "^22.0.0",
