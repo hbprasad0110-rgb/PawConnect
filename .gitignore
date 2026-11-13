@@ -13,3 +13,8 @@ playwright-report/
 !README.md
 .vscode/
 .DS_Store
+
+testing/logs/
+testing/test-results/
+testing/playwright-report/
+testing/playwright-results.json

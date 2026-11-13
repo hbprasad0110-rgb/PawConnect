@@ -77,13 +77,13 @@ export default function RegisterPage() {
               </svg>
             </div>
             <h2 className="font-display font-800 text-2xl text-slate-900 mb-2">Account Created!</h2>
-            <p className="text-slate-500">Welcome to PawConnect, {form.name.split(' ')[0]}! Redirecting you to browse animals...</p>
+              <p className="text-slate-600">Welcome to PawConnect, {form.name.split(' ')[0]}! Redirecting you to browse animals...</p>
           </div>
         ) : (
           <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
             <div className="text-center mb-7">
               <h1 className="font-display font-800 text-2xl text-slate-900 mb-1">Create Your Account</h1>
-              <p className="text-slate-500 text-sm">Join PawConnect and start your adoption journey.</p>
+              <p className="text-slate-600 text-sm">Join PawConnect and start your adoption journey.</p>
             </div>
 
             <form onSubmit={handleSubmit} noValidate className="space-y-4">
@@ -126,22 +126,22 @@ export default function RegisterPage() {
               <Field label="Home Address" field="address" placeholder="123 Main St, Springfield, IL 62701" autoComplete="street-address" minLength={5} />
 
               <div className="bg-blue-50 rounded-xl p-3 border border-blue-100">
-                <p className="text-xs text-blue-700">
+              <p className="text-xs text-blue-800">
                   By creating an account, you agree to PawConnect's Terms of Service and Privacy Policy. Your information will only be used for adoption processing.
                 </p>
               </div>
 
               <button
                 type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-colors duration-200 shadow-md shadow-blue-600/20"
+                className="w-full bg-[#1d4ed8] hover:bg-[#1e3a8a] text-white font-bold py-3 rounded-xl transition-colors duration-200 shadow-md shadow-blue-700/20"
               >
                 Create Account
               </button>
             </form>
 
-            <p className="text-center text-sm text-slate-500 mt-5">
+            <p className="text-center text-sm text-slate-600 mt-5">
               Already have an account?{' '}
-              <button onClick={() => navigate('login')} className="text-blue-600 font-semibold hover:text-blue-700">
+              <button onClick={() => navigate('login')} className="text-[#1d4ed8] font-semibold hover:text-[#1e3a8a]">
                 Sign in
               </button>
             </p>

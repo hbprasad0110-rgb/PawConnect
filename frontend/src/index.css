@@ -100,3 +100,13 @@ input:focus, select:focus, textarea:focus {
   70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(37, 99, 235, 0); }
   100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
 }
+
+/* Keep the shared utility colors readable against the application's light surfaces. */
+.text-slate-400 { color: #475569 !important; }
+.text-slate-500 { color: #475569 !important; }
+.text-slate-600 { color: #334155 !important; }
+.text-slate-700 { color: #1e293b !important; }
+.text-blue-500, .text-blue-600, .text-blue-700 { color: #1d4ed8 !important; }
+.text-orange-600, .text-orange-700 { color: #9a3412 !important; }
+.bg-blue-300, .bg-blue-600, .bg-blue-700 { background-color: #1d4ed8 !important; }
+button[type='submit'] { background-color: #1d4ed8 !important; }
