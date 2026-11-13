@@ -19,6 +19,11 @@ export const notFoundHandler: RequestHandler = (_req, _res, next) =>
   next(new ApiError(404, 'NOT_FOUND', 'Route not found.'));
 
 export const errorHandler: ErrorRequestHandler = (error, _req, res, _next) => {
+  if (error?.type === 'entity.parse.failed') {
+    res.status(400).json({ error: { code: 'INVALID_JSON', message: 'Request body must contain valid JSON.' } });
+    return;
+  }
+
   if (error instanceof ApiError) {
     res.status(error.status).json({ error: { code: error.code, message: error.message, details: error.details } });
     return;

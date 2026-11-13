@@ -19,7 +19,8 @@
     "prod:seed": "docker compose --env-file production.env -f compose.production.yaml exec backend npm run db:seed",
     "build": "npm run build --prefix backend && npm run build --prefix frontend",
     "test": "npm test --prefix backend && npm test --prefix frontend && npm run typecheck --prefix frontend",
-    "test:e2e": "npm run test:e2e --prefix frontend"
+    "test:e2e": "npm run test:e2e --prefix frontend",
+    "test:system": "npm run db:prepare:system --prefix backend && PORT=5003 VITE_API_PROXY_TARGET=http://127.0.0.1:5003 npm run test:e2e:system --prefix frontend"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
