@@ -1,0 +1,506 @@
+{
+  "config": {
+    "argv": [
+      "/usr/local/bin/node",
+      "/Users/dipanjanadas/Desktop/PawConnect/frontend/node_modules/.bin/playwright",
+      "test",
+      "--config=playwright.system.config.ts"
+    ],
+    "configFile": "/Users/dipanjanadas/Desktop/PawConnect/frontend/playwright.system.config.ts",
+    "rootDir": "/Users/dipanjanadas/Desktop/PawConnect/frontend/tests/e2e",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/Users/dipanjanadas/Desktop/PawConnect/testing-evidence/system-testing/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "",
+        "name": "",
+        "testDir": "/Users/dipanjanadas/Desktop/PawConnect/frontend/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/system-real-workflow.spec.ts"
+        ],
+        "timeout": 60000
+      }
+    ],
+    "filteredProjects": [
+      {
+        "grep": {},
+        "grepInvert": null,
+        "outputDir": "/Users/dipanjanadas/Desktop/PawConnect/testing-evidence/system-testing/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "name": "",
+        "testDir": "/Users/dipanjanadas/Desktop/PawConnect/frontend/tests/e2e",
+        "snapshotDir": "/Users/dipanjanadas/Desktop/PawConnect/frontend/tests/e2e",
+        "testIgnore": [],
+        "testMatch": "**/system-real-workflow.spec.ts",
+        "timeout": 60000,
+        "use": {
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36",
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "screen": {
+            "width": 1920,
+            "height": 1080
+          },
+          "deviceScaleFactor": 1,
+          "isMobile": false,
+          "hasTouch": false,
+          "defaultBrowserType": "chromium",
+          "baseURL": "http://127.0.0.1:5173",
+          "trace": "retain-on-failure",
+          "screenshot": "only-on-failure",
+          "video": "retain-on-failure"
+        },
+        "dependencies": [],
+        "ignoreSnapshots": false,
+        "__projectId": ""
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "html",
+        {
+          "outputFolder": "../testing-evidence/system-testing/playwright-report",
+          "open": "never"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "../testing-evidence/system-testing/playwright-results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "default",
+    "updateSourceMethod": "patch",
+    "version": "1.64.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "system-real-workflow.spec.ts",
+      "file": "system-real-workflow.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "SYS PawConnect real end-to-end workflows",
+          "file": "system-real-workflow.spec.ts",
+          "line": 3,
+          "column": 15,
+          "specs": [
+            {
+              "title": "SYS-001 unauthorized access, invalid login, and registration validation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "/Users/dipanjanadas/Desktop/PawConnect/frontend/tests/e2e/system-real-workflow.spec.ts",
+                        "line": 3,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1256,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-03T06:06:14.347Z",
+                      "annotations": [
+                        {
+                          "type": "serial",
+                          "location": {
+                            "file": "/Users/dipanjanadas/Desktop/PawConnect/frontend/tests/e2e/system-real-workflow.spec.ts",
+                            "line": 3,
+                            "column": 15
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a2f86223c6af974db75e-3d5420c3de70ec476a0e",
+              "file": "system-real-workflow.spec.ts",
+              "line": 31,
+              "column": 3
+            },
+            {
+              "title": "SYS-002 adopter registers, logs in, browses, and submits an application",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "/Users/dipanjanadas/Desktop/PawConnect/frontend/tests/e2e/system-real-workflow.spec.ts",
+                        "line": 3,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5279,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-03T06:06:15.666Z",
+                      "annotations": [
+                        {
+                          "type": "serial",
+                          "location": {
+                            "file": "/Users/dipanjanadas/Desktop/PawConnect/frontend/tests/e2e/system-real-workflow.spec.ts",
+                            "line": 3,
+                            "column": 15
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a2f86223c6af974db75e-1d246b8435195e981d4b",
+              "file": "system-real-workflow.spec.ts",
+              "line": 47,
+              "column": 3
+            },
+            {
+              "title": "SYS-003 duplicate registration and adopter logout are rejected",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "/Users/dipanjanadas/Desktop/PawConnect/frontend/tests/e2e/system-real-workflow.spec.ts",
+                        "line": 3,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1540,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-03T06:06:20.949Z",
+                      "annotations": [
+                        {
+                          "type": "serial",
+                          "location": {
+                            "file": "/Users/dipanjanadas/Desktop/PawConnect/frontend/tests/e2e/system-real-workflow.spec.ts",
+                            "line": 3,
+                            "column": 15
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a2f86223c6af974db75e-6d79076488ce49210149",
+              "file": "system-real-workflow.spec.ts",
+              "line": 94,
+              "column": 3
+            },
+            {
+              "title": "SYS-004 admin rejects one application and approves the Buddy application",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "/Users/dipanjanadas/Desktop/PawConnect/frontend/tests/e2e/system-real-workflow.spec.ts",
+                        "line": 3,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1955,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-03T06:06:22.493Z",
+                      "annotations": [
+                        {
+                          "type": "serial",
+                          "location": {
+                            "file": "/Users/dipanjanadas/Desktop/PawConnect/frontend/tests/e2e/system-real-workflow.spec.ts",
+                            "line": 3,
+                            "column": 15
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a2f86223c6af974db75e-f39db4fe9bc33e07b755",
+              "file": "system-real-workflow.spec.ts",
+              "line": 109,
+              "column": 3
+            },
+            {
+              "title": "SYS-005 adopter schedules an appointment and sees approved status",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "/Users/dipanjanadas/Desktop/PawConnect/frontend/tests/e2e/system-real-workflow.spec.ts",
+                        "line": 3,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2069,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-03T06:06:24.451Z",
+                      "annotations": [
+                        {
+                          "type": "serial",
+                          "location": {
+                            "file": "/Users/dipanjanadas/Desktop/PawConnect/frontend/tests/e2e/system-real-workflow.spec.ts",
+                            "line": 3,
+                            "column": 15
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a2f86223c6af974db75e-6da26882c741459e5198",
+              "file": "system-real-workflow.spec.ts",
+              "line": 130,
+              "column": 3
+            },
+            {
+              "title": "SYS-006 admin confirms, completes, and finalizes the adoption",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "/Users/dipanjanadas/Desktop/PawConnect/frontend/tests/e2e/system-real-workflow.spec.ts",
+                        "line": 3,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2476,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-03T06:06:26.523Z",
+                      "annotations": [
+                        {
+                          "type": "serial",
+                          "location": {
+                            "file": "/Users/dipanjanadas/Desktop/PawConnect/frontend/tests/e2e/system-real-workflow.spec.ts",
+                            "line": 3,
+                            "column": 15
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a2f86223c6af974db75e-313baa34f4993becc336",
+              "file": "system-real-workflow.spec.ts",
+              "line": 146,
+              "column": 3
+            },
+            {
+              "title": "SYS-007 adopter sees adoption history and logout protects the session",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "/Users/dipanjanadas/Desktop/PawConnect/frontend/tests/e2e/system-real-workflow.spec.ts",
+                        "line": 3,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1132,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-03T06:06:29.003Z",
+                      "annotations": [
+                        {
+                          "type": "serial",
+                          "location": {
+                            "file": "/Users/dipanjanadas/Desktop/PawConnect/frontend/tests/e2e/system-real-workflow.spec.ts",
+                            "line": 3,
+                            "column": 15
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a2f86223c6af974db75e-c58c60f4ddd70d6af568",
+              "file": "system-real-workflow.spec.ts",
+              "line": 173,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-11-03T06:06:12.900Z",
+    "duration": 17283.616,
+    "expected": 7,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

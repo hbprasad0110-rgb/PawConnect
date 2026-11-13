@@ -9,7 +9,7 @@
     "start": "node dist/src/server.js",
     "typecheck": "tsc --noEmit",
     "test": "npm run test:unit && npm run test:integration",
-    "test:unit": "node --import tsx --test tests/animalStatus.test.ts tests/appointmentStatus.test.ts tests/emailService.test.ts tests/health.test.ts",
+    "test:unit": "node --import tsx --test tests/animalStatus.test.ts tests/appointmentStatus.test.ts tests/auth.test.ts tests/emailService.test.ts tests/errors.test.ts tests/health.test.ts tests/serializers.test.ts tests/validate.test.ts tests/security.test.ts",
     "test:integration": "node scripts/run-integration-tests.mjs",
     "email:test": "tsx scripts/test-email.ts",
     "db:create": "node scripts/create-database.mjs",
@@ -18,9 +18,11 @@
     "db:seed": "knex seed:run --knexfile knexfile.cjs",
     "db:setup": "npm run db:migrate && npm run db:seed",
     "db:setup:native": "npm run db:create && npm run db:migrate && npm run db:seed",
+    "db:prepare:system": "node scripts/prepare-system-test-db.mjs",
     "db:docker:up": "docker compose --env-file ../.env -f ../compose.yaml up -d database",
     "db:docker:down": "docker compose --env-file ../.env -f ../compose.yaml down",
-    "db:docker:logs": "docker compose --env-file ../.env -f ../compose.yaml logs -f database"
+    "db:docker:logs": "docker compose --env-file ../.env -f ../compose.yaml logs -f database",
+    "test:serve": "NODE_ENV=test EMAIL_MODE=disabled tsx src/server.ts"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",

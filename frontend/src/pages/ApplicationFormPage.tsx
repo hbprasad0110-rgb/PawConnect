@@ -1,6 +1,31 @@
 import { useState } from 'react';
 import { useApp } from '../ApiAppContext';
 
+type ApplicationTextAreaProps = {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  error?: string;
+  placeholder?: string;
+  rows?: number;
+};
+
+function ApplicationTextArea({ label, value, onChange, error, placeholder, rows = 3 }: ApplicationTextAreaProps) {
+  return (
+    <div>
+      <label className="block text-sm font-semibold text-slate-700 mb-1.5">{label}</label>
+      <textarea
+        rows={rows}
+        value={value}
+        onChange={event => onChange(event.target.value)}
+        placeholder={placeholder}
+        className={`w-full px-4 py-3 rounded-xl border text-sm focus:ring-2 focus:ring-blue-500/30 transition-all resize-none ${error ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-slate-50 hover:border-slate-300 focus:border-blue-400'}`}
+      />
+      {error && <p className="text-red-600 text-xs mt-1">{error}</p>}
+    </div>
+  );
+}
+
 export default function ApplicationFormPage() {
   const { animals, selectedAnimalId, currentUser, applyForAdoption, navigate } = useApp();
   const animal = animals.find(a => a.id === selectedAnimalId);
@@ -66,20 +91,6 @@ export default function ApplicationFormPage() {
     </div>
   );
 
-  const TextArea = ({ label, field, placeholder, rows = 3 }: { label: string; field: string; placeholder?: string; rows?: number }) => (
-    <div>
-      <label className="block text-sm font-semibold text-slate-700 mb-1.5">{label}</label>
-      <textarea
-        rows={rows}
-        value={(form as Record<string, string | boolean>)[field] as string}
-        onChange={e => set(field, e.target.value)}
-        placeholder={placeholder}
-        className={`w-full px-4 py-3 rounded-xl border text-sm focus:ring-2 focus:ring-blue-500/30 transition-all resize-none ${errors[field] ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-slate-50 hover:border-slate-300 focus:border-blue-400'}`}
-      />
-      {errors[field] && <p className="text-red-600 text-xs mt-1">{errors[field]}</p>}
-    </div>
-  );
-
   return (
     <div className="fade-in min-h-screen bg-slate-50">
       {/* Header */}
@@ -111,15 +122,19 @@ export default function ApplicationFormPage() {
               <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-7">
                 <h2 className="font-display font-700 text-lg text-slate-900 mb-5">About Your Lifestyle</h2>
                 <div className="space-y-4">
-                  <TextArea
+                  <ApplicationTextArea
                     label="Why do you want to adopt this animal? *"
-                    field="reason"
+                    value={form.reason}
+                    onChange={value => set('reason', value)}
+                    error={errors.reason}
                     placeholder="Tell us why you'd like to adopt and what kind of home you'll provide..."
                     rows={4}
                   />
-                  <TextArea
+                  <ApplicationTextArea
                     label="Describe your experience with pets *"
-                    field="experience"
+                    value={form.experience}
+                    onChange={value => set('experience', value)}
+                    error={errors.experience}
                     placeholder="Have you owned pets before? What types? Any training experience?"
                     rows={3}
                   />
@@ -163,9 +178,11 @@ export default function ApplicationFormPage() {
                   </div>
 
                   {form.hasOtherPets && (
-                    <TextArea
+                    <ApplicationTextArea
                       label="Describe your other pets *"
-                      field="otherPetsDescription"
+                      value={form.otherPetsDescription}
+                      onChange={value => set('otherPetsDescription', value)}
+                      error={errors.otherPetsDescription}
                       placeholder="Types, breeds, ages, temperament..."
                       rows={2}
                     />
@@ -195,9 +212,11 @@ export default function ApplicationFormPage() {
                     </select>
                     {errors.employmentStatus && <p className="text-red-600 text-xs mt-1">{errors.employmentStatus}</p>}
                   </div>
-                  <TextArea
+                  <ApplicationTextArea
                     label="References *"
-                    field="references"
+                    value={form.references}
+                    onChange={value => set('references', value)}
+                    error={errors.references}
                     placeholder="Name, relationship, phone number (e.g. Dr. Amy Williams, vet: (555) 111-2222)"
                     rows={3}
                   />

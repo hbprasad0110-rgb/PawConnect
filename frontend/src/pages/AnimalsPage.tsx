@@ -89,8 +89,8 @@ export default function AnimalsPage() {
             </div>
 
             <div className="mb-5">
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2 block">Age</label>
-              <select value={ageRange} onChange={(event) => { setAgeRange(event.target.value as typeof ageRange); setPage(1); }} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white">
+              <label htmlFor="animal-age" className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2 block">Age</label>
+              <select id="animal-age" aria-label="Age" value={ageRange} onChange={(event) => { setAgeRange(event.target.value as typeof ageRange); setPage(1); }} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white">
                 <option value="ALL">Any age</option><option value="YOUNG">Under 1 year</option><option value="ADULT">1–6 years</option><option value="SENIOR">7+ years</option>
               </select>
             </div>
@@ -153,7 +153,7 @@ export default function AnimalsPage() {
           </div>
 
           <div className="flex items-center justify-between mb-4">
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-slate-600">
               <span className="font-semibold text-slate-800">{meta.total}</span> animals found
             </p>
           </div>
@@ -164,7 +164,7 @@ export default function AnimalsPage() {
             <div className="text-center py-20 bg-white rounded-2xl border border-slate-100">
               <div className="text-5xl mb-4">🔍</div>
               <h3 className="font-display font-700 text-xl text-slate-700 mb-2">No animals found</h3>
-              <p className="text-slate-400">Try adjusting your filters or search term.</p>
+              <p className="text-slate-600">Try adjusting your filters or search term.</p>
             </div>
           ) : (
             <div className="grid grid-cols-3 gap-5">
@@ -192,7 +192,7 @@ export default function AnimalsPage() {
                       <AnimalStatusBadge status={animal.status} />
                     </div>
                     <p className="text-slate-500 text-sm">{animal.breed}</p>
-                    <p className="text-slate-400 text-xs mt-0.5 mb-3">{animal.gender} · {animal.age}</p>
+                    <p className="text-slate-500 text-xs mt-0.5 mb-3">{animal.gender} · {animal.age}</p>
                     <div className="flex items-center gap-2 text-blue-600 font-semibold text-sm group-hover:gap-3 transition-all duration-200">
                       View Details
                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
