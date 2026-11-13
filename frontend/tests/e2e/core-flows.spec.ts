@@ -38,6 +38,21 @@ test('registration form enforces required fields', async ({ page }) => {
   await expectNoPageOverflow(page);
 });
 
+test('registration fields retain focus while typing', async ({ page }) => {
+  await page.goto('/register');
+  const fullName = page.getByLabel('Full Name');
+  await fullName.click();
+  await fullName.pressSequentially('Browser Test User', { delay: 20 });
+  await expect(fullName).toHaveValue('Browser Test User');
+  await expect(fullName).toBeFocused();
+
+  const email = page.getByLabel('Email Address');
+  await email.click();
+  await email.pressSequentially('browser-focus@pawconnect.test', { delay: 10 });
+  await expect(email).toHaveValue('browser-focus@pawconnect.test');
+  await expect(email).toBeFocused();
+});
+
 test('adopter can sign in and access personal workflows', async ({ page }) => {
   await page.goto('/login');
   await page.getByRole('button', { name: /Adopter Login/ }).click();

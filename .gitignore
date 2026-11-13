@@ -9,7 +9,8 @@ coverage/
 test-results/
 playwright-report/
 *.tsbuildinfo
-
+*.md
+!README.md
 .vscode/
 .DS_Store
 

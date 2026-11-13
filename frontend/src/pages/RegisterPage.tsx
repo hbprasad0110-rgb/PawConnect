@@ -10,6 +10,49 @@ export type RegistrationForm = {
   address: string;
 };
 
+type RegistrationFieldProps = {
+  label: string;
+  field: keyof RegistrationForm;
+  value: string;
+  error?: string;
+  onChange: (field: keyof RegistrationForm, value: string) => void;
+  type?: string;
+  placeholder?: string;
+  autoComplete?: string;
+  minLength?: number;
+};
+
+function RegistrationField({
+  label,
+  field,
+  value,
+  error,
+  onChange,
+  type = 'text',
+  placeholder,
+  autoComplete,
+  minLength,
+}: RegistrationFieldProps) {
+  return (
+    <div>
+      <label htmlFor={`register-${field}`} className="block text-sm font-semibold text-slate-700 mb-1.5">{label}</label>
+      <input
+        id={`register-${field}`}
+        type={type}
+        value={value}
+        onChange={event => onChange(field, event.target.value)}
+        placeholder={placeholder}
+        autoComplete={autoComplete}
+        minLength={minLength}
+        aria-invalid={Boolean(error)}
+        aria-describedby={error ? `register-${field}-error` : undefined}
+        className={`w-full px-4 py-3 rounded-xl border text-sm focus:ring-2 focus:ring-blue-500/30 transition-all ${error ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-slate-50 hover:border-slate-300 focus:border-blue-400'}`}
+      />
+      {error && <p id={`register-${field}-error`} className="text-red-600 text-xs mt-1">{error}</p>}
+    </div>
+  );
+}
+
 export const validateRegistration = (form: RegistrationForm) => {
   const errors: Record<string, string> = {};
   if (!form.name.trim()) errors.name = 'Full name is required.';
@@ -32,7 +75,7 @@ export default function RegisterPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [success, setSuccess] = useState(false);
 
-  const set = (field: string, value: string) => {
+  const set = (field: keyof RegistrationForm, value: string) => {
     setForm(f => ({ ...f, [field]: value }));
     if (errors[field]) setErrors(e => ({ ...e, [field]: '' }));
   };
@@ -46,25 +89,6 @@ export default function RegisterPage() {
     setSuccess(true);
     setTimeout(() => navigate('animals'), 1500);
   };
-
-  const Field = ({ label, field, type = 'text', placeholder, autoComplete, minLength }: { label: string; field: string; type?: string; placeholder?: string; autoComplete?: string; minLength?: number }) => (
-    <div>
-      <label htmlFor={`register-${field}`} className="block text-sm font-semibold text-slate-700 mb-1.5">{label}</label>
-      <input
-        id={`register-${field}`}
-        type={type}
-        value={(form as Record<string, string>)[field]}
-        onChange={e => set(field, e.target.value)}
-        placeholder={placeholder}
-        autoComplete={autoComplete}
-        minLength={minLength}
-        aria-invalid={Boolean(errors[field])}
-        aria-describedby={errors[field] ? `register-${field}-error` : undefined}
-        className={`w-full px-4 py-3 rounded-xl border text-sm focus:ring-2 focus:ring-blue-500/30 transition-all ${errors[field] ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-slate-50 hover:border-slate-300 focus:border-blue-400'}`}
-      />
-      {errors[field] && <p id={`register-${field}-error`} className="text-red-600 text-xs mt-1">{errors[field]}</p>}
-    </div>
-  );
 
   return (
     <div className="fade-in min-h-[calc(100vh-4rem)] bg-slate-50 flex items-center justify-center px-6 py-12">
@@ -87,8 +111,8 @@ export default function RegisterPage() {
             </div>
 
             <form onSubmit={handleSubmit} noValidate className="space-y-4">
-              <Field label="Full Name" field="name" placeholder="Sarah Johnson" autoComplete="name" />
-              <Field label="Email Address" field="email" type="email" placeholder="you@example.com" autoComplete="email" />
+              <RegistrationField label="Full Name" field="name" value={form.name} error={errors.name} onChange={set} placeholder="Sarah Johnson" autoComplete="name" />
+              <RegistrationField label="Email Address" field="email" value={form.email} error={errors.email} onChange={set} type="email" placeholder="you@example.com" autoComplete="email" />
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="register-password" className="block text-sm font-semibold text-slate-700 mb-1.5">Password</label>
@@ -122,8 +146,8 @@ export default function RegisterPage() {
                   {errors.confirmPassword && <p id="register-confirm-password-error" className="text-red-600 text-xs mt-1">{errors.confirmPassword}</p>}
                 </div>
               </div>
-              <Field label="Phone Number" field="phone" type="tel" placeholder="(555) 234-5678" autoComplete="tel" minLength={7} />
-              <Field label="Home Address" field="address" placeholder="123 Main St, Springfield, IL 62701" autoComplete="street-address" minLength={5} />
+              <RegistrationField label="Phone Number" field="phone" value={form.phone} error={errors.phone} onChange={set} type="tel" placeholder="(555) 234-5678" autoComplete="tel" minLength={7} />
+              <RegistrationField label="Home Address" field="address" value={form.address} error={errors.address} onChange={set} placeholder="123 Main St, Springfield, IL 62701" autoComplete="street-address" minLength={5} />
 
               <div className="bg-blue-50 rounded-xl p-3 border border-blue-100">
               <p className="text-xs text-blue-800">
