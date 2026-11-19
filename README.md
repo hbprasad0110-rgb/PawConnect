@@ -91,6 +91,22 @@ Open PowerShell in the project folder.
 
 2. Open `.env` and replace the example database passwords, JWT secret, and demonstration account passwords. The local database and schema name must remain `pawconnect`. The default Docker port is `3307`.
 
+   Keep the demonstration credentials synchronized so the quick-login buttons use the same passwords as the backend:
+
+   - `ADMIN_PASSWORD` must match `VITE_DEMO_ADMIN_PASSWORD`.
+   - `DEMO_ADOPTER_PASSWORD` must match `VITE_DEMO_ADOPTER_PASSWORD`.
+
+   The default `EMAIL_MODE=log` setting prints email information in the backend terminal instead of sending real messages. To deliver registration and password-reset emails through Gmail, enable two-step verification on the Gmail account, create a Google App Password, and configure:
+
+   ```text
+   EMAIL_MODE=smtp
+   SMTP_USER=your-gmail-address@gmail.com
+   SMTP_APP_PASSWORD=your-google-app-password
+   EMAIL_FROM=PawConnect Support <your-gmail-address@gmail.com>
+   ```
+
+   Keep the App Password only in `.env`. Do not place it in source files or commit it to Git.
+
 3. Install the root tools:
 
    ```powershell
@@ -104,6 +120,8 @@ Open PowerShell in the project folder.
    ```
 
 The setup command is normally needed only once. The Docker volume keeps the local database data between runs.
+
+The expanded demonstration records used on the main development computer were added directly to its local MySQL Docker volume. They are not part of the repository seed file. Running `npm run setup`, running the backend seed command, or deleting the `pawconnect_mysql_data` Docker volume will replace or remove those additional records. Avoid these actions immediately before the class demonstration.
 
 ## Run the local demonstration
 
@@ -149,6 +167,7 @@ The application database user should be used instead of the MySQL root account.
 | `npm run dev` | Start the database, backend, and frontend directly |
 | `npm test` | Run backend tests, frontend tests, and frontend type checking |
 | `npm run test:e2e` | Run the Playwright browser tests |
+| `npm run test:e2e:install --prefix frontend` | Install the Playwright browser binaries |
 | `npm run build` | Check that the backend and frontend build successfully |
 | `npm run db:status` | Show the local MySQL container status |
 | `npm run db:down` | Stop the local Docker services |
@@ -156,6 +175,12 @@ The application database user should be used instead of the MySQL root account.
 ## Testing
 
 The project includes unit tests for authentication, validation, error handling, serializers, email templates, and status transitions. The database integration test covers registration, password reset, application review, appointment handling, and adoption completion. Playwright tests check the main adopter and administrator screens on desktop and mobile browser sizes.
+
+Install the Playwright browser binaries once before running the browser tests on a new computer:
+
+```powershell
+npm run test:e2e:install --prefix frontend
+```
 
 Before a class demonstration, run:
 
